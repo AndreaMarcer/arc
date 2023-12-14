@@ -1,0 +1,14 @@
+{
+    "recommendations": [
+        "ms-vscode.cmake-tools",
+        "ms-vscode.makefile-tools",
+        "ms-vscode.cpptools-extension-pack",
+        "cschlosser.doxdocgen",
+        "gruntfuggly.todo-tree",
+        "eamodio.gitlens",
+        "marus25.cortex-debug",
+        "ms-vscode-remote.remote-ssh",
+        "L13RARY.l13-diff",
+        "Cardinal90.multi-cursor-case-preserve"
+    ]
+}
