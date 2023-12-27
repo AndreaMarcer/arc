@@ -12,7 +12,7 @@ alias tmux='tmux -f ${ARC_DIR}/config/tmux.conf'
 #################################################################
 
 # Loop through all .sh files in the folder
-for file in ./*.sh; do
+for file in ${ARC_DIR}/scripts/*.sh; do
     # Extract the file name without the extension
     file_name=$(basename "$file" .sh) 
     # Create an alias for each file
