@@ -1,0 +1,21 @@
+#! /bin/bash
+
+export WORKING_DIRECTORY=${HOME}/workspace
+export ARC_DIR=${WORKING_DIRECTORY}/arc
+export PICO_SDK_PATH=${ARC_DIR}/external/pico-sdk
+
+alias arc='cd ${ARC_DIR}'
+alias tmux='tmux -f ${ARC_DIR}/config/tmux.conf'
+
+#################################################################
+#			     SCRIPTS
+#################################################################
+
+# Loop through all .sh files in the folder
+for file in ./*.sh; do
+    # Extract the file name without the extension
+    file_name=$(basename "$file" .sh) 
+    # Create an alias for each file
+    alias "$file_name"="bash $file"
+    echo "Alias created: $file_name"
+done
