@@ -7,8 +7,8 @@
         "gruntfuggly.todo-tree",
         "eamodio.gitlens",
         "marus25.cortex-debug",
-        "ms-vscode-remote.remote-ssh",
         "L13RARY.l13-diff",
-        "Cardinal90.multi-cursor-case-preserve"
+        "Cardinal90.multi-cursor-case-preserve",
+        "tomoki1207.pdf"
     ]
 }
