@@ -17,5 +17,4 @@ for file in ${ARC_DIR}/scripts/*.sh; do
     file_name=$(basename "$file" .sh) 
     # Create an alias for each file
     alias "$file_name"="bash $file"
-    echo "Alias created: $file_name"
 done
