@@ -2,7 +2,7 @@
 
 # Check the number of arguments
 if [ "$#" -ne 1 ]; then
-    echo "Usage: $0 <file to flsh>"
+    echo "Usage: $0 <file to flash>"
     exit 1
 fi
 
