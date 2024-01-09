@@ -4,11 +4,16 @@ export WORKING_DIRECTORY=${HOME}/workspace
 export ARC_DIR=${WORKING_DIRECTORY}/arc
 export PICO_SDK_PATH=${ARC_DIR}/external/pico-sdk
 
+#################################################################
+#			               ALIASES
+#################################################################
+
 alias arc='cd ${ARC_DIR}'
 alias tmux='tmux -f ${ARC_DIR}/config/tmux.conf'
+alias nano='nano --rcfile=${ARC_DIR}/config/nanorc'
 
 #################################################################
-#			     SCRIPTS
+#			               SCRIPTS
 #################################################################
 
 # Loop through all .sh files in the folder
