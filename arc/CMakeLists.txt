@@ -1,5 +1,8 @@
-add_executable(arc
+set(SRCS 
+    src/main.c
 )
+
+add_executable(arc ${SRCS})
 
 # pull in common dependencies
 target_link_libraries(arc pico_stdlib)
