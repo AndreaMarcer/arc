@@ -8,7 +8,7 @@ fi
 
 file_to_copy=$1
 
-# Check if the file ends with .uf2
+# Check if the file ends with .elf
 if [[ ! "$file_to_copy" =~ \.elf$ ]]; then
     echo "Error: The file must have a .elf extension."
     exit 1
@@ -20,7 +20,4 @@ if [ ! -e "$file_to_copy" ]; then
     exit 1
 fi
 
-
-
 openocd -f interface/raspberrypi-swd.cfg -f target/rp2040.cfg -c "program $1 verify reset exit"
-
