@@ -1,5 +1,9 @@
 #!/bin/bash
 
-cd ${ARC_DIR}/build
-make
-cd -
+if [ -d "${ARC_DIR}/build" ]; then
+    cd ${ARC_DIR}/build
+    make
+    cd -
+else
+    echo "${ARC_DIR}/build does not exist. Please run pico_configure"
+fi

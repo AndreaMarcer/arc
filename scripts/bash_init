@@ -12,6 +12,10 @@ alias arc='cd ${ARC_DIR}'
 alias tmux='tmux -f ${ARC_DIR}/config/tmux.conf'
 alias nano='nano --rcfile=${ARC_DIR}/config/nanorc'
 
+alias pf='pico_flash_swd'
+alias pbf='pico_build; pico_flash_swd'
+alias pcbf='pico_clean; pico_configure; pico_build; pico_flash_swd'
+
 #################################################################
 #			               SCRIPTS
 #################################################################
