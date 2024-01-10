@@ -8,4 +8,6 @@
     "C_Cpp.loggingLevel": "Debug",
     "gitlens.plusFeatures.enabled": false,
     "git.detectSubmodules": false,
+    "cmake.buildBeforeRun": true,
+    "cmake.configureOnOpen": false
 }
