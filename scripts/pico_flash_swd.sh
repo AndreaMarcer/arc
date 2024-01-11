@@ -1,23 +1,28 @@
 #!/bin/bash
 
 # Check the number of arguments
-if [ "$#" -ne 1 ]; then
+if [ "$#" -eq 0 ]; then
+    file_to_flash=${ARC_DIR}/build/arc/arc.elf
+else if [ "$#" -eq 1 ]; then
+    file_to_flash=$1
+else 
     echo "Usage: $0 <file to flash>"
     exit 1
 fi
-
-file_to_copy=$1
+fi
 
 # Check if the file ends with .elf
-if [[ ! "$file_to_copy" =~ \.elf$ ]]; then
+if [[ ! "$file_to_flash" =~ \.elf$ ]]; then
     echo "Error: The file must have a .elf extension."
     exit 1
 fi
 
 # Check if the file exists
-if [ ! -e "$file_to_copy" ]; then
-    echo "Error: File '$file_to_copy' does not exist."
+if [ ! -e "$file_to_flash" ]; then
+    echo "Error: File '$file_to_flash' does not exist."
     exit 1
 fi
 
-openocd -f interface/raspberrypi-swd.cfg -f target/rp2040.cfg -c "program $1 verify reset exit"
+echo "FLASHING: ${file_to_flash}"
+
+openocd -f interface/raspberrypi-swd.cfg -f target/rp2040.cfg -c "program ${file_to_flash} verify reset exit"
