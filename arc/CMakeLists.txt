@@ -1,8 +1,15 @@
 set(SRCS 
-    src/main.c
+    src/main.cpp
+    src/sensors/MPU6050.cpp
 )
 
-add_executable(arc ${SRCS})
+set(HEADERS 
+    include/arc/sensors/MPU6050.hpp
+    include/arc/common/constants.hpp
+)
+
+add_executable(arc ${SRCS} ${HEADERS})
+target_include_directories(arc PRIVATE include/arc)
 
 # pull in common dependencies
 target_link_libraries(arc pico_stdlib hardware_i2c)
