@@ -203,6 +203,7 @@ class MPU6050 {
 
 	int setAccRange(mpu6050_acc_range_t range);
 	int setGyroRange(mpu6050_gyro_range_t range);
+
 	int self_test();
 
 	int enable_self_test();
