@@ -76,7 +76,6 @@ static void mpu6050_read_raw(int16_t accel[3], int16_t gyro[3], int16_t *temp)
 
 	for (int i = 0; i < 3; i++) {
 		gyro[i] = (buffer[i * 2] << 8 | buffer[(i * 2) + 1]);
-		;
 	}
 
 	// Now temperature from reg 0x41 for 2 bytes
@@ -99,7 +98,7 @@ int main()
 	puts("Default I2C pins were not defined");
 	return 0;
 #else
-	printf("Hello, MPU6050! Reading raw data from registers...\n");
+	printf("\n\n\n\nHello, MPU6050! Reading raw data from registers...\n");
 
 	const uint LED_PIN = PICO_DEFAULT_LED_PIN;
 
@@ -118,40 +117,37 @@ int main()
 
 	mpu6050_reset();
 
-	int16_t acceleration[3], gyro[3], temp;
-	float acceleration_f[3];
-	float acceleration_mod;
+	// int16_t acceleration[3], gyro[3], temp;
+	// float acceleration_f[3];
+	// float acceleration_mod;
 
 	arc::sensors::MPU6050 mpu6050{ 0x68 };
 
-	uint8_t scale = 0;
-	while (1) {
-		gpio_put(LED_PIN, 1);
+	sleep_ms(1000);
 
-		mpu6050.set_acc_scale(scale);
+		// for (uint8_t scale = 0; scale < 4; scale++) {
+	// 	gpio_put(LED_PIN, 1);
 
-		scale = (scale + 1) % 4;
+	// 	mpu6050.set_acc_scale(scale);
 
-		mpu6050_read_raw(acceleration, gyro, &temp);
+	// 	mpu6050.get_raw_acc(acceleration);
 
-		acceleration_f[0] = acceleration[0] * mpu6050.m_acc_scale;
-		acceleration_f[1] = acceleration[1] * mpu6050.m_acc_scale;
-		acceleration_f[2] = acceleration[2] * mpu6050.m_acc_scale;
-		acceleration_mod = sqrtf(acceleration_f[0] * acceleration_f[0] +
-					 acceleration_f[1] * acceleration_f[1] +
-					 acceleration_f[2] * acceleration_f[2]);
-
-		printf("Acc. X = %f, Y = %f, Z = %f, |.|=%f\n",
-		       acceleration_f[0], acceleration_f[1], acceleration_f[2],
-		       acceleration_mod);
-		printf("Gyro. X = %d, Y = %d, Z = %d\n", gyro[0], gyro[1],
-		       gyro[2]);
-		printf("Temp. = %f\n", (temp / 340.0) + 36.53);
-
-		sleep_ms(1000);
-
-		gpio_put(LED_PIN, 0);
-		sleep_ms(250);
-	}
+	// 	acceleration_f[0] = acceleration[0] * mpu6050.m_acc_scale;
+	// 	acceleration_f[1] = acceleration[1] * mpu6050.m_acc_scale;
+	// 	acceleration_f[2] = acceleration[2] * mpu6050.m_acc_scale;
+	// 	acceleration_mod = sqrtf(acceleration_f[0] * acceleration_f[0] +
+	// 				 acceleration_f[1] * acceleration_f[1] +
+	// 				 acceleration_f[2] * acceleration_f[2]);
+	// 	printf("Acc. X = %f, Y = %f, Z = %f, |.|=%f\n\n",
+	// 	       acceleration_f[0], acceleration_f[1], acceleration_f[2],
+	// 	       acceleration_mod);
+	// 	sleep_ms(1000);
+	// 	gpio_put(LED_PIN, 0);
+	// 	sleep_ms(250);
+	// }
+	//mpu6050_read_raw(acceleration, gyro, &temp);
+	// printf("Gyro. X = %d, Y = %d, Z = %d\n", gyro[0], gyro[1],
+	//        gyro[2]);
+	// printf("Temp. = %f\n", (temp / 340.0) + 36.53);
 #endif
 }

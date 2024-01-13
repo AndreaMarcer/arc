@@ -13,6 +13,7 @@
 
 #include "pico/stdlib.h"
 #include "common/constants.hpp"
+#include "common/common.hpp"
 
 namespace arc {
 namespace sensors {
@@ -100,13 +101,23 @@ namespace sensors {
 #define MPU6050_X_ACC_SELF_TEST_BIT (1 << 7)
 #define MPU6050_Y_ACC_SELF_TEST_BIT (1 << 6)
 #define MPU6050_Z_ACC_SELF_TEST_BIT (1 << 5)
-#define MPU6050_ACC_SCALE_BITS 0x24
+#define MPU6050_ACC_SCALE_BITS 0x18
+
+#define MPU6050_ACC_SCALE_2G 0x0
+#define MPU6050_ACC_SCALE_4G 0x1
+#define MPU6050_ACC_SCALE_8G 0x2
+#define MPU6050_ACC_SCALE_16G 0x3
 
 // Register 1B (27)
 #define MPU6050_X_GYRO_SELF_TEST_BIT (1 << 7)
 #define MPU6050_Y_GYRO_SELF_TEST_BIT (1 << 6)
 #define MPU6050_Z_GYRO_SELF_TEST_BIT (1 << 5)
-#define MPU6050_GYRO_SCALE_BITS 0x24
+#define MPU6050_GYRO_SCALE_BITS 0x18
+
+#define MPU6050_GYRO_SCALE_250 0x0
+#define MPU6050_GYRO_SCALE_500 0x1
+#define MPU6050_GYRO_SCALE_1000 0x2
+#define MPU6050_GYRO_SCALE_2000 0x3
 
 // Register 1A (26)
 #define MPU6050_EXTERNAL_SYNC_BITS 0x56
@@ -129,7 +140,16 @@ class MPU6050 {
 
 	int read(uint8_t reg, uint8_t *buf, size_t bytes);
 
+	int get_raw_acc(int16_t accel[3]);
+	void print_raw_acc(int16_t accel[3]);
+	int get_acc(float accel[3]);
+	void print_acc(float accel[3]);
+
 	int set_acc_scale(uint8_t scale);
+	int self_test();
+
+	int enable_self_test();
+	int disable_self_test();
 
     private:
 	uint8_t m_address;
@@ -142,6 +162,8 @@ class MPU6050 {
 	uint8_t m_acc_scale_index{ 0 };
 	uint8_t m_gyro_scale_index{ 0 };
 	uint8_t m_DLPF_conf{ 0 };
+	float m_acc_self_test[3]; // %
+	bool fail{ false };
 };
 
 } // namespace sensors

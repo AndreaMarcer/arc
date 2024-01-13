@@ -6,6 +6,7 @@ set(SRCS
 set(HEADERS 
     include/arc/sensors/MPU6050.hpp
     include/arc/common/constants.hpp
+    include/arc/common/common.hpp
 )
 
 add_executable(arc ${SRCS} ${HEADERS})
