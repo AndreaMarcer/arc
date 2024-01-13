@@ -18,6 +18,21 @@
 namespace arc {
 namespace sensors {
 
+inline static float gyroFactoryTrim(uint8_t factory_trim)
+{
+	if (factory_trim == 0)
+		return 0.0f;
+	return 25.0f * 131.0f * powf(1.046f, factory_trim - 1.0f);
+}
+
+inline static float accFactoryTrim(uint8_t factory_trim)
+{
+	if (factory_trim == 0)
+		return 0.0f;
+	float exp = (factory_trim - 1.0f) / ((1 << 5) - 2.0f);
+	return 4096.0f * 0.34f * powf(0.92f / 0.34f, exp);
+}
+
 MPU6050::MPU6050(uint8_t address)
 	: m_address{ address }
 {
@@ -53,12 +68,12 @@ MPU6050::MPU6050(uint8_t address)
 		break;
 	}
 
-	read(0x1B, &buf, 1);
-	m_gyro_scale_index = (buf & MPU6050_GYRO_SCALE_BITS);
+	// read(0x1B, &buf, 1);
+	// m_gyro_scale_index = (buf & MPU6050_GYRO_SCALE_BITS);
 	// printf("Gyro scale: %hhu\n", m_gyro_scale_index);
 
-	read(0x1A, &buf, 1);
-	m_DLPF_conf = (buf & MPU6050_DIGITAL_LOW_PASS_FILTER_BITS);
+	// read(0x1A, &buf, 1);
+	// m_DLPF_conf = (buf & MPU6050_DIGITAL_LOW_PASS_FILTER_BITS);
 	// printf("DLPF conf: %hhu\n", m_DLPF_conf);
 
 	self_test();
@@ -82,29 +97,82 @@ int MPU6050::read(uint8_t reg, uint8_t *buf, size_t bytes)
 	return 0;
 }
 
-int MPU6050::set_acc_scale(uint8_t scale)
+int MPU6050::setAccRange(mpu6050_acc_range_t range)
 {
 	//TODO: add scale range check
-	printf("Acc scale to set: %hhu\n", scale);
 
-	switch (scale) {
-	case MPU6050_ACC_SCALE_2G:
+	switch (range) {
+	case MPU6050_ACC_RANGE_2G:
 		m_acc_scale = 1.0f / (1 << 14);
+		printf("Acc range set to 2g\n");
 		break;
-	case MPU6050_ACC_SCALE_4G:
+	case MPU6050_ACC_RANGE_4G:
 		m_acc_scale = 1.0f / (1 << 13);
+		printf("Acc range set to 4g\n");
+
 		break;
-	case MPU6050_ACC_SCALE_8G:
+	case MPU6050_ACC_RANGE_8G:
 		m_acc_scale = 1.0f / (1 << 12);
+		printf("Acc range set to 8g\n");
+
 		break;
-	case MPU6050_ACC_SCALE_16G:
+	case MPU6050_ACC_RANGE_16G:
 		m_acc_scale = 1.0f / (1 << 11);
+		printf("Acc range set to 16g\n");
+
 		break;
 	default:
-		break;
+		printf("INVALID Acc range\n");
+		return -1;
 	}
 
-	uint8_t data[2] = { 0x1C, static_cast<uint8_t>(scale << 3) };
+	uint8_t acc_conf;
+	read(MPU6050_ACC_CONF_ADDR, &acc_conf, 1);
+	acc_conf &= 0b11100111;
+	acc_conf |= range << 3;
+
+	uint8_t data[2] = { MPU6050_ACC_CONF_ADDR, acc_conf };
+	i2c_write_blocking(i2c_default, m_address, data, 2, false);
+	sleep_ms(10);
+
+	return 0;
+}
+
+int MPU6050::setGyroRange(mpu6050_gyro_range_t range)
+{
+	//TODO: add scale range check
+
+	switch (range) {
+	case MPU6050_GYRO_RANGE_250:
+		m_gyro_scale = 1.0f / (1 << 14);
+		printf("Gyro range set to 250\n");
+		break;
+	case MPU6050_GYRO_RANGE_500:
+		m_gyro_scale = 1.0f / (1 << 13);
+		printf("Gyro range set to 500\n");
+
+		break;
+	case MPU6050_GYRO_RANGE_1000:
+		m_gyro_scale = 1.0f / (1 << 12);
+		printf("Gyro range set to 1000\n");
+
+		break;
+	case MPU6050_GYRO_RANGE_2000:
+		m_gyro_scale = 1.0f / (1 << 11);
+		printf("Gyro range set to 2000\n");
+
+		break;
+	default:
+		printf("INVALID Gyro range\n");
+		return -1;
+	}
+
+	uint8_t gyro_conf;
+	read(MPU6050_GYRO_CONF_ADDR, &gyro_conf, 1);
+	gyro_conf &= 0b11100111;
+	gyro_conf |= range << 3;
+
+	uint8_t data[2] = { MPU6050_GYRO_CONF_ADDR, gyro_conf };
 	i2c_write_blocking(i2c_default, m_address, data, 2, false);
 	sleep_ms(10);
 
@@ -134,7 +202,7 @@ int MPU6050::self_test()
 			((buf[3] & reg_10_mask) >> (4 - i * 2));
 		acc_fact_test[i] = acc_fact_test_4_2 | acc_fact_test_1_0;
 
-		FT[i] = 1392.64f *
+		FT[i] = 4096.0f * 0.34f *
 			pow(0.92f / 0.34f, (acc_fact_test[i] - 1.0f) / 30.0f);
 		reg_10_mask >>= 2;
 
@@ -142,7 +210,7 @@ int MPU6050::self_test()
 	}
 	printf("\n");
 
-	set_acc_scale(MPU6050_ACC_SCALE_8G);
+	setAccRange(MPU6050_ACC_RANGE_8G);
 
 	int16_t raw_acc[3];
 	float acc[3];
@@ -150,10 +218,10 @@ int MPU6050::self_test()
 
 	enable_self_test();
 	printf("\nSELF TEST ENABLED\n");
-	get_raw_acc(raw_acc);
-	print_raw_acc(raw_acc);
-	get_acc(acc);
-	print_acc(acc);
+	getRawAcc(raw_acc);
+	printRawAcc(raw_acc);
+	getAcc(acc);
+	printAcc(acc);
 	for (uint8_t i = 0; i < 3; i++) {
 		selftest_response[i] = raw_acc[i];
 	}
@@ -161,10 +229,10 @@ int MPU6050::self_test()
 
 	disable_self_test();
 	printf("\nSELF TEST DISABLED\n");
-	get_raw_acc(raw_acc);
-	print_raw_acc(raw_acc);
-	get_acc(acc);
-	print_acc(acc);
+	getRawAcc(raw_acc);
+	printRawAcc(raw_acc);
+	getAcc(acc);
+	printAcc(acc);
 
 	printf("\nSELF TEST COMPUTE\nSelf Test: [ ");
 	for (uint8_t i = 0; i < 3; i++) {
@@ -201,7 +269,7 @@ int MPU6050::self_test()
 
 int MPU6050::enable_self_test()
 {
-	set_acc_scale(MPU6050_ACC_SCALE_8G);
+	setAccRange(MPU6050_ACC_RANGE_8G);
 
 	uint8_t buf;
 	read(0x1C, &buf, 1);
@@ -231,39 +299,41 @@ int MPU6050::disable_self_test()
 	return 0;
 }
 
-int MPU6050::get_acc(float accel[3])
+int MPU6050::getAcc(float accel[3])
 {
-	int16_t raw_acc[3];
-	get_raw_acc(raw_acc);
+	// TODO: add check on read and input
+	uint8_t buf[6];
+	read(MPU6050_ACC_X_H_ADDR, buf, 6);
 
-	for (int i = 0; i < 3; i++) {
-		accel[i] = raw_acc[i] * m_acc_scale;
-	}
+	accel[0] = static_cast<int16_t>((buf[0] << 8) | buf[1]) * m_acc_scale;
+	accel[1] = static_cast<int16_t>((buf[2] << 8) | buf[3]) * m_acc_scale;
+	accel[2] = static_cast<int16_t>((buf[4] << 8) | buf[5]) * m_acc_scale;
 
 	return 0;
 }
 
-void MPU6050::print_acc(float accel[3])
+void MPU6050::printAcc(float accel[3])
 {
-	printf("Acc [%f, %f, %f]\t|.| = %f\n", accel[0], accel[1], accel[2],
+	printf("Acc = [%f, %f, %f]\t|.| = %f\n", accel[0], accel[1], accel[2],
 	       arc::common::modf(accel));
 }
 
-int MPU6050::get_raw_acc(int16_t accel[3])
+int MPU6050::getRawAcc(int16_t accel[3])
 {
+	// TODO: add check on read
 	uint8_t buf[6];
-	read(0x3B, buf, 6);
+	read(MPU6050_ACC_X_H_ADDR, buf, 6);
 
-	for (int i = 0; i < 3; i++) {
-		accel[i] = (buf[i * 2] << 8 | buf[(i * 2) + 1]);
-	}
+	accel[0] = (buf[0] << 8) | buf[1];
+	accel[1] = (buf[2] << 8) | buf[3];
+	accel[2] = (buf[4] << 8) | buf[5];
 
 	return 0;
 }
 
-void MPU6050::print_raw_acc(int16_t accel[3])
+void MPU6050::printRawAcc(int16_t accel[3])
 {
-	printf("Acc. X = %d, Y = %d, Z = %d\n", accel[0], accel[1], accel[2]);
+	printf("Raw acc = [%d, %d, %d]\n", accel[0], accel[1], accel[2]);
 }
 
 } // namespace sensors

@@ -72,10 +72,10 @@ typedef enum {
 #define MPU6050_ACC_DHPF_BITS 0x7
 
 typedef enum {
-	MPU6050_ACC_RANGE_2 = 0,
-	MPU6050_ACC_RANGE_4 = 1,
-	MPU6050_ACC_RANGE_8 = 2,
-	MPU6050_ACC_RANGE_16 = 3,
+	MPU6050_ACC_RANGE_2G = 0,
+	MPU6050_ACC_RANGE_4G = 1,
+	MPU6050_ACC_RANGE_8G = 2,
+	MPU6050_ACC_RANGE_16G = 3,
 } mpu6050_acc_range_t;
 
 typedef enum {
@@ -88,11 +88,6 @@ typedef enum {
 	MPU6050_ACC_DHPF_HOLD = 6,
 } mpu6050_acc_highpass_t;
 
-#define MPU6050_ACC_SCALE_2G 0x0
-#define MPU6050_ACC_SCALE_4G 0x1
-#define MPU6050_ACC_SCALE_8G 0x2
-#define MPU6050_ACC_SCALE_16G 0x3
-
 #define MPU6050_FIFO_EN_ADDR 0x23
 #define MPU6050_TEMP_FIFO_ENABLE_BIT (1 << 7)
 #define MPU6050_X_GYRO_FIFO_ENABLE_BIT (1 << 6)
@@ -103,7 +98,7 @@ typedef enum {
 #define MPU6050_SLV1_FIFO_ENABLE_BIT (1 << 1)
 #define MPU6050_SLV0_FIFO_ENABLE_BIT (1 << 0)
 
-#define MPU6050_FIFO_EN_ADDR 0x37
+#define MPU6050_INT_PIN_CFG_ADDR 0x37
 #define MPU6050_INT_LEVEL_BIT (1 << 7)
 #define MPU6050_INT_OPEN_BIT (1 << 6)
 #define MPU6050_LATCH_INT_ENABLE_BIT (1 << 5)
@@ -198,20 +193,23 @@ class MPU6050 {
     public:
 	//TODO: pass i2c instance to constructor
 	MPU6050(uint8_t address);
-	float m_acc_scale{ 1.0 };
 
 	int read(uint8_t reg, uint8_t *buf, size_t bytes);
 
-	int get_raw_acc(int16_t accel[3]);
-	void print_raw_acc(int16_t accel[3]);
-	int get_acc(float accel[3]);
-	void print_acc(float accel[3]);
+	int getRawAcc(int16_t accel[3]);
+	void printRawAcc(int16_t accel[3]);
+	int getAcc(float accel[3]);
+	void printAcc(float accel[3]);
 
-	int set_acc_scale(uint8_t scale);
+	int setAccRange(mpu6050_acc_range_t range);
+	int setGyroRange(mpu6050_gyro_range_t range);
 	int self_test();
 
 	int enable_self_test();
 	int disable_self_test();
+
+	float m_acc_scale{ 1.0 };
+	float m_gyro_scale{ 1.0 };
 
     private:
 	uint8_t m_address;
