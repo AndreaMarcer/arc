@@ -52,9 +52,9 @@ typedef enum {
 } mpu6050_bandwidth_t;
 
 #define MPU6050_GYRO_CONF_ADDR 0x1B
-#define MPU6050_XG_ST_BIT (1 << 7)
-#define MPU6050_YG_ST_BIT (1 << 6)
-#define MPU6050_ZG_ST_BIT (1 << 5)
+#define MPU6050_X_GYRO_SELF_TEST_BIT (1 << 7)
+#define MPU6050_Y_GYRO_SELF_TEST_BIT (1 << 6)
+#define MPU6050_Z_GYRO_SELF_TEST_BIT (1 << 5)
 #define MPU6050_GYRO_RANGE_BITS 0x18
 
 typedef enum {
@@ -197,24 +197,29 @@ class MPU6050 {
 	int read(uint8_t reg, uint8_t *buf, size_t bytes);
 
 	int getRawAcc(int16_t accel[3]);
-	void printRawAcc(int16_t accel[3]);
 	int getAcc(float accel[3]);
+	void printRawAcc(int16_t accel[3]);
 	void printAcc(float accel[3]);
-
 	int setAccRange(mpu6050_acc_range_t range);
+	int enableAccSelfTest();
+	int disableAccSelfTest();
+
+	int getRawGyro(int16_t gyro[3]);
+	int getGyro(float gyro[3]);
+	void printRawGyro(int16_t gyro[3]);
+	void printGyro(float gyro[3]);
 	int setGyroRange(mpu6050_gyro_range_t range);
+	int enableGyroSelfTest();
+	int disableGyroSelfTest();
 
-	int self_test();
-
-	int enable_self_test();
-	int disable_self_test();
-
-	float m_acc_scale{ 1.0 };
-	float m_gyro_scale{ 1.0 };
+	int selfTest();
+	int accSelfTest();
+	int gyroSelfTest();
 
     private:
 	uint8_t m_address;
-
+	float m_acc_scale{ 1.0 };
+	float m_gyro_scale{ 1.0 };
 	bool m_temp_enabled{ false };
 	uint8_t m_clk_sel{ 0 };
 	bool m_FIFO_enabled{ false };
@@ -224,7 +229,9 @@ class MPU6050 {
 	uint8_t m_gyro_scale_index{ 0 };
 	uint8_t m_DLPF_conf{ 0 };
 	float m_acc_self_test[3]; // %
+	float m_gyro_self_test[3]; // %
 	bool fail{ false };
+	bool m_is_gyro_rad{ false };
 };
 
 } // namespace sensors
