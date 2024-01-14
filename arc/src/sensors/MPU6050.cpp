@@ -37,6 +37,8 @@ inline static float accFactoryTrim(uint8_t factory_trim)
 MPU6050::MPU6050(uint8_t address)
 	: m_address{ address }
 {
+	reset();
+
 	uint8_t who_am_i;
 	read(0x75, &who_am_i, 1);
 	// printf("I AM: 0x%X\n", who_am_i);
@@ -52,23 +54,6 @@ MPU6050::MPU6050(uint8_t address)
 	m_acc_scale_index = (buf & MPU6050_ACC_SCALE_BITS);
 	// printf("Acc scale: %hhu\n", m_acc_scale_index);
 
-	switch (m_acc_scale_index) {
-	case 0:
-		m_acc_scale = 1.0f / (1 << 14);
-		break;
-	case 1:
-		m_acc_scale = 1.0f / (1 << 13);
-		break;
-	case 2:
-		m_acc_scale = 1.0f / (1 << 12);
-		break;
-	case 3:
-		m_acc_scale = 1.0f / (1 << 11);
-		break;
-	default:
-		break;
-	}
-
 	// read(0x1B, &buf, 1);
 	// m_gyro_scale_index = (buf & MPU6050_GYRO_SCALE_BITS);
 	// printf("Gyro scale: %hhu\n", m_gyro_scale_index);
@@ -76,6 +61,8 @@ MPU6050::MPU6050(uint8_t address)
 	// read(0x1A, &buf, 1);
 	// m_DLPF_conf = (buf & MPU6050_DIGITAL_LOW_PASS_FILTER_BITS);
 	// printf("DLPF conf: %hhu\n", m_DLPF_conf);
+
+	wake();
 
 	selfTest();
 }
@@ -548,6 +535,98 @@ void MPU6050::printRawGyro(int16_t gyro[3])
 	}
 
 	printf("Raw gyro = [%d, %d, %d]\n", gyro[0], gyro[1], gyro[2]);
+}
+
+int MPU6050::enableInterrupt()
+{
+	int ret;
+
+	uint8_t buf[] = { MPU6050_INT_PIN_CFG_ADDR,
+			  MPU6050_LATCH_INT_ENABLE_BIT };
+	ret = i2c_write_blocking(i2c_default, m_address, buf, 2, false);
+	if (ret != 2) {
+		return -1;
+	}
+	sleep_ms(10);
+
+	uint8_t buf2[] = { MPU6050_INT_ENABLE_ADDR,
+			   MPU6050_DATA_READY_INT_BIT };
+	ret = i2c_write_blocking(i2c_default, m_address, buf2, 2, false);
+	if (ret != 2) {
+		return -1;
+	}
+	sleep_ms(10);
+
+	return 0;
+}
+
+int MPU6050::getInterruptStatus(uint8_t *int_status)
+{
+	if (int_status == nullptr) {
+		return -1;
+	}
+
+	if (read(MPU6050_INT_STATUS_ADDR, int_status, 6) != 0) {
+		return -1;
+	}
+
+	return 0;
+}
+
+int MPU6050::reset()
+{
+	uint8_t pwr_mgmt;
+	if (read(MPU6050_PWR_MGMT_1_ADDR, &pwr_mgmt) != 0) {
+		return -1;
+	}
+
+	int ret;
+
+	uint8_t reset_mask = pwr_mgmt | MPU6050_RESET_BIT;
+	uint8_t buf[] = { MPU6050_PWR_MGMT_1_ADDR, reset_mask };
+	ret = i2c_write_blocking(i2c_default, m_address, buf, 2, false);
+	if (ret != 2) {
+		return -1;
+	}
+	sleep_ms(10);
+
+	return 0;
+}
+
+int MPU6050::sleep()
+{
+	uint8_t pwr_mgmt;
+	if (read(MPU6050_PWR_MGMT_1_ADDR, &pwr_mgmt) != 0) {
+		return -1;
+	}
+
+	uint8_t sleep_mask = pwr_mgmt & MPU6050_SLEEP_BIT;
+	uint8_t buf2[] = { MPU6050_PWR_MGMT_1_ADDR, sleep_mask };
+	int ret = i2c_write_blocking(i2c_default, m_address, buf2, 2, false);
+	if (ret != 2) {
+		return -1;
+	}
+	sleep_ms(10);
+
+	return 0;
+}
+
+int MPU6050::wake()
+{
+	uint8_t pwr_mgmt;
+	if (read(MPU6050_PWR_MGMT_1_ADDR, &pwr_mgmt) != 0) {
+		return -1;
+	}
+
+	uint8_t wake_mask = pwr_mgmt & ~MPU6050_SLEEP_BIT;
+	uint8_t buf2[] = { MPU6050_PWR_MGMT_1_ADDR, wake_mask };
+	int ret = i2c_write_blocking(i2c_default, m_address, buf2, 2, false);
+	if (ret != 2) {
+		return -1;
+	}
+	sleep_ms(10);
+
+	return 0;
 }
 
 } // namespace sensors

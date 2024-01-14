@@ -52,9 +52,9 @@ typedef enum {
 } mpu6050_bandwidth_t;
 
 #define MPU6050_GYRO_CONF_ADDR 0x1B
-#define MPU6050_X_GYRO_SELF_TEST_BIT (1 << 7)
-#define MPU6050_Y_GYRO_SELF_TEST_BIT (1 << 6)
-#define MPU6050_Z_GYRO_SELF_TEST_BIT (1 << 5)
+#define MPU6050_X_GYRO_SELF_TEST_BIT static_cast<uint8_t>(1 << 7)
+#define MPU6050_Y_GYRO_SELF_TEST_BIT static_cast<uint8_t>(1 << 6)
+#define MPU6050_Z_GYRO_SELF_TEST_BIT static_cast<uint8_t>(1 << 5)
 #define MPU6050_GYRO_RANGE_BITS 0x18
 
 typedef enum {
@@ -65,9 +65,9 @@ typedef enum {
 } mpu6050_gyro_range_t;
 
 #define MPU6050_ACC_CONF_ADDR 0x1C
-#define MPU6050_X_ACC_SELF_TEST_BIT (1 << 7)
-#define MPU6050_Y_ACC_SELF_TEST_BIT (1 << 6)
-#define MPU6050_Z_ACC_SELF_TEST_BIT (1 << 5)
+#define MPU6050_X_ACC_SELF_TEST_BIT static_cast<uint8_t>(1 << 7)
+#define MPU6050_Y_ACC_SELF_TEST_BIT static_cast<uint8_t>(1 << 6)
+#define MPU6050_Z_ACC_SELF_TEST_BIT static_cast<uint8_t>(1 << 5)
 #define MPU6050_ACC_SCALE_BITS 0x18
 #define MPU6050_ACC_DHPF_BITS 0x7
 
@@ -89,33 +89,33 @@ typedef enum {
 } mpu6050_acc_highpass_t;
 
 #define MPU6050_FIFO_EN_ADDR 0x23
-#define MPU6050_TEMP_FIFO_ENABLE_BIT (1 << 7)
-#define MPU6050_X_GYRO_FIFO_ENABLE_BIT (1 << 6)
-#define MPU6050_Y_GYRO_FIFO_ENABLE_BIT (1 << 5)
-#define MPU6050_Z_GYRO_FIFO_ENABLE_BIT (1 << 4)
-#define MPU6050_ACC_FIFO_ENABLE_BIT (1 << 3)
-#define MPU6050_SLV2_FIFO_ENABLE_BIT (1 << 2)
-#define MPU6050_SLV1_FIFO_ENABLE_BIT (1 << 1)
-#define MPU6050_SLV0_FIFO_ENABLE_BIT (1 << 0)
+#define MPU6050_TEMP_FIFO_ENABLE_BIT static_cast<uint8_t>(1 << 7)
+#define MPU6050_X_GYRO_FIFO_ENABLE_BIT static_cast<uint8_t>(1 << 6)
+#define MPU6050_Y_GYRO_FIFO_ENABLE_BIT static_cast<uint8_t>(1 << 5)
+#define MPU6050_Z_GYRO_FIFO_ENABLE_BIT static_cast<uint8_t>(1 << 4)
+#define MPU6050_ACC_FIFO_ENABLE_BIT static_cast<uint8_t>(1 << 3)
+#define MPU6050_SLV2_FIFO_ENABLE_BIT static_cast<uint8_t>(1 << 2)
+#define MPU6050_SLV1_FIFO_ENABLE_BIT static_cast<uint8_t>(1 << 1)
+#define MPU6050_SLV0_FIFO_ENABLE_BIT static_cast<uint8_t>(1 << 0)
 
 #define MPU6050_INT_PIN_CFG_ADDR 0x37
-#define MPU6050_INT_LEVEL_BIT (1 << 7)
-#define MPU6050_INT_OPEN_BIT (1 << 6)
-#define MPU6050_LATCH_INT_ENABLE_BIT (1 << 5)
-#define MPU6050_INT_CLEAR_ON_READ_BIT (1 << 4)
-#define MPU6050_FSYNC_INT_LEVEL_BIT (1 << 3)
-#define MPU6050_FSYNC_INT_ENABLE_BIT (1 << 2)
-#define MPU6050_I2C_BYPASS_ENABLE_BIT (1 << 1)
+#define MPU6050_INT_LEVEL_BIT static_cast<uint8_t>(1 << 7)
+#define MPU6050_INT_OPEN_BIT static_cast<uint8_t>(1 << 6)
+#define MPU6050_LATCH_INT_ENABLE_BIT static_cast<uint8_t>(1 << 5)
+#define MPU6050_INT_CLEAR_ON_READ_BIT static_cast<uint8_t>(1 << 4)
+#define MPU6050_FSYNC_INT_LEVEL_BIT static_cast<uint8_t>(1 << 3)
+#define MPU6050_FSYNC_INT_ENABLE_BIT static_cast<uint8_t>(1 << 2)
+#define MPU6050_I2C_BYPASS_ENABLE_BIT static_cast<uint8_t>(1 << 1)
 
-#define MPU6050_INT_ENABLE_ADDR 0x3A
-#define MPU6050_FIFO_OVERFLOW_BIT (1 << 4)
-#define MPU6050_I2C_MASTER_INT_BIT (1 << 3)
-#define MPU6050_DATA_READY_INT_BIT (1 << 0)
+#define MPU6050_INT_ENABLE_ADDR 0x38
+#define MPU6050_FIFO_OVERFLOW_BIT static_cast<uint8_t>(1 << 4)
+#define MPU6050_I2C_MASTER_INT_BIT static_cast<uint8_t>(1 << 3)
+#define MPU6050_DATA_READY_INT_BIT static_cast<uint8_t>(1 << 0)
 
-#define MPU6050_INT_STATUS_ADDR 0x3B
-#define MPU6050_FIFO_OVERFLOW_INT_ENABLE_BIT (1 << 4)
-#define MPU6050_I2C_MASTER_INT_ENABLE_BIT (1 << 3)
-#define MPU6050_DATA_READY_INT_ENABLE_BIT (1 << 0)
+#define MPU6050_INT_STATUS_ADDR 0x3A
+#define MPU6050_FIFO_OVERFLOW_INT_ENABLE_BIT static_cast<uint8_t>(1 << 4)
+#define MPU6050_I2C_MASTER_INT_ENABLE_BIT static_cast<uint8_t>(1 << 3)
+#define MPU6050_DATA_READY_INT_ENABLE_BIT static_cast<uint8_t>(1 << 0)
 
 #define MPU6050_ACC_X_H_ADDR 0x3B
 #define MPU6050_ACC_X_L_ADDR 0x3C
@@ -135,23 +135,23 @@ typedef enum {
 #define MPU6050_GYRO_Z_L_ADDR 0x48
 
 #define MPU6050_SIGNAL_PATH_RESET_ADDR 0x68
-#define MPU6050_GYRO_RESET_BIT (1 << 2)
-#define MPU6050_ACC_RESET_BIT (1 << 1)
-#define MPU6050_TEMP_RESET_BIT (1 << 0)
+#define MPU6050_GYRO_RESET_BIT static_cast<uint8_t>(1 << 2)
+#define MPU6050_ACC_RESET_BIT static_cast<uint8_t>(1 << 1)
+#define MPU6050_TEMP_RESET_BIT static_cast<uint8_t>(1 << 0)
 
 #define MPU6050_USER_CTRL_ADDR 0x6A
-#define MPU6050_FIFO_ENABLED_BIT (1 << 6)
-#define MPU6050_I2C_MASTER_ENABLED_BIT (1 << 5)
-#define MPU6050_I2C_ENABLED_BIT (1 << 4)
-#define MPU6050_FIFO_RESET_BIT (1 << 2)
-#define MPU6050_I2C_MASTER_RESET_BIT (1 << 1)
-#define MPU6050_SIGNAL_COND_RESET_BIT (1 << 0)
+#define MPU6050_FIFO_ENABLED_BIT static_cast<uint8_t>(1 << 6)
+#define MPU6050_I2C_MASTER_ENABLED_BIT static_cast<uint8_t>(1 << 5)
+#define MPU6050_I2C_ENABLED_BIT static_cast<uint8_t>(1 << 4)
+#define MPU6050_FIFO_RESET_BIT static_cast<uint8_t>(1 << 2)
+#define MPU6050_I2C_MASTER_RESET_BIT static_cast<uint8_t>(1 << 1)
+#define MPU6050_SIGNAL_COND_RESET_BIT static_cast<uint8_t>(1 << 0)
 
 #define MPU6050_PWR_MGMT_1_ADDR 0x6B
-#define MPU6050_RESET_BIT (1 << 7)
-#define MPU6050_SLEEP_BIT (1 << 6)
-#define MPU6050_CYCLE_BIT (1 << 5)
-#define MPU6050_TEMP_DISABLED_BIT (1 << 3)
+#define MPU6050_RESET_BIT static_cast<uint8_t>(1 << 7)
+#define MPU6050_SLEEP_BIT static_cast<uint8_t>(1 << 6)
+#define MPU6050_CYCLE_BIT static_cast<uint8_t>(1 << 5)
+#define MPU6050_TEMP_DISABLED_BIT static_cast<uint8_t>(1 << 3)
 #define MPU6050_CLK_SEL_BITS 0x7
 
 typedef enum {
@@ -166,12 +166,12 @@ typedef enum {
 
 #define MPU6050_PWR_MGMT_2_ADDR 0x6C
 #define MPU6050_LP_WAKE_CTRL_BITS 0xC0
-#define MPU6050_STBY_XA_BIT (1 << 5)
-#define MPU6050_STBY_YA_BIT (1 << 4)
-#define MPU6050_STBY_ZA_BIT (1 << 3)
-#define MPU6050_STBY_XG_BIT (1 << 2)
-#define MPU6050_STBY_YG_BIT (1 << 1)
-#define MPU6050_STBY_ZG_BIT (1 << 0)
+#define MPU6050_STBY_XA_BIT static_cast<uint8_t>(1 << 5)
+#define MPU6050_STBY_YA_BIT static_cast<uint8_t>(1 << 4)
+#define MPU6050_STBY_ZA_BIT static_cast<uint8_t>(1 << 3)
+#define MPU6050_STBY_XG_BIT static_cast<uint8_t>(1 << 2)
+#define MPU6050_STBY_YG_BIT static_cast<uint8_t>(1 << 1)
+#define MPU6050_STBY_ZG_BIT static_cast<uint8_t>(1 << 0)
 
 typedef enum {
 	MPU6050_CYCLE_1_25_HZ = 0,
@@ -194,7 +194,7 @@ class MPU6050 {
 	//TODO: pass i2c instance to constructor
 	MPU6050(uint8_t address);
 
-	int read(uint8_t reg, uint8_t *buf, size_t bytes);
+	int read(uint8_t reg, uint8_t *buf, size_t bytes = 1);
 
 	int getRawAcc(int16_t accel[3]);
 	int getAcc(float accel[3]);
@@ -212,12 +212,21 @@ class MPU6050 {
 	int enableGyroSelfTest();
 	int disableGyroSelfTest();
 
+	int enableInterrupt();
+
 	int selfTest();
 	int accSelfTest();
 	int gyroSelfTest();
 
+	int getInterruptStatus(uint8_t *int_status);
+
+	int reset();
+	int sleep();
+	int wake();
+
     private:
-	uint8_t m_address;
+	bool m_is_gyro_rad{ false };
+	uint8_t m_address{ 0 };
 	float m_acc_scale{ 1.0 };
 	float m_gyro_scale{ 1.0 };
 	bool m_temp_enabled{ false };
@@ -231,7 +240,6 @@ class MPU6050 {
 	float m_acc_self_test[3]; // %
 	float m_gyro_self_test[3]; // %
 	bool fail{ false };
-	bool m_is_gyro_rad{ false };
 };
 
 } // namespace sensors
