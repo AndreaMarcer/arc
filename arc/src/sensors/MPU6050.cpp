@@ -39,32 +39,13 @@ MPU6050::MPU6050(uint8_t address)
 {
 	reset();
 
-	uint8_t who_am_i;
-	read(0x75, &who_am_i, 1);
-	// printf("I AM: 0x%X\n", who_am_i);
-
-	uint8_t buf;
-	read(0x6B, &buf, 1);
-	m_temp_enabled = !(buf & MPU6050_TEMP_DISABLED_BIT);
-	m_clk_sel = buf & MPU6050_CLK_SEL_BITS;
-	// printf("Temp: %hhu\n", m_temp_enabled);
-	// printf("Clk: %hhu\n", m_clk_sel);
-
-	read(0x1C, &buf, 1);
-	m_acc_scale_index = (buf & MPU6050_ACC_SCALE_BITS);
-	// printf("Acc scale: %hhu\n", m_acc_scale_index);
-
-	// read(0x1B, &buf, 1);
-	// m_gyro_scale_index = (buf & MPU6050_GYRO_SCALE_BITS);
-	// printf("Gyro scale: %hhu\n", m_gyro_scale_index);
-
-	// read(0x1A, &buf, 1);
-	// m_DLPF_conf = (buf & MPU6050_DIGITAL_LOW_PASS_FILTER_BITS);
-	// printf("DLPF conf: %hhu\n", m_DLPF_conf);
+	reset_paths();
 
 	wake();
 
 	selfTest();
+
+	sleep();
 }
 
 int MPU6050::read(uint8_t reg, uint8_t *buf, size_t bytes)
@@ -560,13 +541,9 @@ int MPU6050::enableInterrupt()
 	return 0;
 }
 
-int MPU6050::getInterruptStatus(uint8_t *int_status)
+int MPU6050::getInterruptStatus(uint8_t &int_status)
 {
-	if (int_status == nullptr) {
-		return -1;
-	}
-
-	if (read(MPU6050_INT_STATUS_ADDR, int_status, 6) != 0) {
+	if (read(MPU6050_INT_STATUS_ADDR, &int_status, 1) != 0) {
 		return -1;
 	}
 
@@ -588,7 +565,23 @@ int MPU6050::reset()
 	if (ret != 2) {
 		return -1;
 	}
-	sleep_ms(10);
+	sleep_ms(100);
+
+	return 0;
+}
+
+int MPU6050::reset_paths()
+{
+	int ret;
+
+	uint8_t reset_mask = MPU6050_GYRO_RESET_BIT | MPU6050_ACC_RESET_BIT |
+			     MPU6050_TEMP_RESET_BIT;
+	uint8_t buf[] = { MPU6050_SIGNAL_PATH_RESET_ADDR, reset_mask };
+	ret = i2c_write_blocking(i2c_default, m_address, buf, 2, false);
+	if (ret != 2) {
+		return -1;
+	}
+	sleep_ms(100);
 
 	return 0;
 }
@@ -620,6 +613,37 @@ int MPU6050::wake()
 
 	uint8_t wake_mask = pwr_mgmt & ~MPU6050_SLEEP_BIT;
 	uint8_t buf2[] = { MPU6050_PWR_MGMT_1_ADDR, wake_mask };
+	int ret = i2c_write_blocking(i2c_default, m_address, buf2, 2, false);
+	if (ret != 2) {
+		return -1;
+	}
+	sleep_ms(10);
+
+	return 0;
+}
+
+int MPU6050::getDLPFConfig(mpu6050_dlpf_t &cfg)
+{
+	uint8_t dlpf_cfg;
+	if (read(MPU6050_CONFIG_ADDR, &dlpf_cfg) != 0) {
+		return -1;
+	}
+
+	cfg = static_cast<mpu6050_dlpf_t>(dlpf_cfg & MPU6050_DLPF_CFG_BITS);
+
+	return 0;
+}
+
+int MPU6050::setDLPFConfig(mpu6050_dlpf_t cfg)
+{
+	uint8_t dlpf_cfg;
+	if (read(MPU6050_CONFIG_ADDR, &dlpf_cfg) != 0) {
+		return -1;
+	}
+
+	dlpf_cfg &= ~MPU6050_DLPF_CFG_BITS; // clear the dlpf bits
+	dlpf_cfg |= cfg; // set the dlpf bits
+	uint8_t buf2[] = { MPU6050_CONFIG_ADDR, dlpf_cfg };
 	int ret = i2c_write_blocking(i2c_default, m_address, buf2, 2, false);
 	if (ret != 2) {
 		return -1;

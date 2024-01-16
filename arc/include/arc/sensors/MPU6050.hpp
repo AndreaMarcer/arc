@@ -42,14 +42,14 @@ namespace sensors {
 #define MPU6050_DLPF_CFG_BITS 0x7
 
 typedef enum {
-	MPU6050_BANDWIDTH_260HZ = 0,
-	MPU6050_BANDWIDTH_184HZ = 1,
-	MPU6050_BANDWIDTH_94HZ = 2,
-	MPU6050_BANDWIDTH_44HZ = 3,
-	MPU6050_BANDWIDTH_21HZ = 4,
-	MPU6050_BANDWIDTH_10HZ = 5,
-	MPU6050_BANDWIDTH_5HZ = 6,
-} mpu6050_bandwidth_t;
+	MPU6050_DLPF_260HZ = 0,
+	MPU6050_DLPF_184HZ = 1,
+	MPU6050_DLPF_94HZ = 2,
+	MPU6050_DLPF_44HZ = 3,
+	MPU6050_DLPF_21HZ = 4,
+	MPU6050_DLPF_10HZ = 5,
+	MPU6050_DLPF_5HZ = 6,
+} mpu6050_dlpf_t;
 
 #define MPU6050_GYRO_CONF_ADDR 0x1B
 #define MPU6050_X_GYRO_SELF_TEST_BIT static_cast<uint8_t>(1 << 7)
@@ -86,7 +86,7 @@ typedef enum {
 	MPU6050_ACC_DHPF_0_63_HZ = 4,
 	MPU6050_ACC_DHPF_UNUSED = 5,
 	MPU6050_ACC_DHPF_HOLD = 6,
-} mpu6050_acc_highpass_t;
+} mpu6050_acc_dhpfs_t;
 
 #define MPU6050_FIFO_EN_ADDR 0x23
 #define MPU6050_TEMP_FIFO_ENABLE_BIT static_cast<uint8_t>(1 << 7)
@@ -99,9 +99,26 @@ typedef enum {
 #define MPU6050_SLV0_FIFO_ENABLE_BIT static_cast<uint8_t>(1 << 0)
 
 #define MPU6050_INT_PIN_CFG_ADDR 0x37
+/**
+ * @brief When this bit is equal to 0, the logic level for the INT pin is active high. 
+ * When this bit is equal to 1, the logic level for the INT pin is active low. 
+ */
 #define MPU6050_INT_LEVEL_BIT static_cast<uint8_t>(1 << 7)
+/**
+ * @brief When this bit is equal to 0, the INT pin is configured as push-pull.
+ * When this bit is equal to 1, the INT pin is configured as open drain.
+ */
 #define MPU6050_INT_OPEN_BIT static_cast<uint8_t>(1 << 6)
+/**
+ * @brief When this bit is equal to 0, the INT pin emits a 50us long pulse.
+ * When this bit is equal to 1, the INT pin is held high until the interrupt is cleared
+ */
 #define MPU6050_LATCH_INT_ENABLE_BIT static_cast<uint8_t>(1 << 5)
+/**
+ * @brief When this bit is equal to 0, interrupt status bits are cleared only by reading 
+ * INT_STATUS (Register 58).
+ * When this bit is equal to 1, interrupt status bits are cleared on any read operation.
+ */
 #define MPU6050_INT_CLEAR_ON_READ_BIT static_cast<uint8_t>(1 << 4)
 #define MPU6050_FSYNC_INT_LEVEL_BIT static_cast<uint8_t>(1 << 3)
 #define MPU6050_FSYNC_INT_ENABLE_BIT static_cast<uint8_t>(1 << 2)
@@ -110,11 +127,19 @@ typedef enum {
 #define MPU6050_INT_ENABLE_ADDR 0x38
 #define MPU6050_FIFO_OVERFLOW_BIT static_cast<uint8_t>(1 << 4)
 #define MPU6050_I2C_MASTER_INT_BIT static_cast<uint8_t>(1 << 3)
+/**
+ * @brief When set to 1, this bit enables the Data Ready interrupt, which occurs each 
+ * time a write operation to all of the sensor registers has been completed.
+ */
 #define MPU6050_DATA_READY_INT_BIT static_cast<uint8_t>(1 << 0)
 
 #define MPU6050_INT_STATUS_ADDR 0x3A
 #define MPU6050_FIFO_OVERFLOW_INT_ENABLE_BIT static_cast<uint8_t>(1 << 4)
 #define MPU6050_I2C_MASTER_INT_ENABLE_BIT static_cast<uint8_t>(1 << 3)
+/**
+ * @brief This bit automatically sets to 1 when a Data Ready interrupt is generated. 
+ * The bit clears to 0 after the register has been read.
+ */
 #define MPU6050_DATA_READY_INT_ENABLE_BIT static_cast<uint8_t>(1 << 0)
 
 #define MPU6050_ACC_X_H_ADDR 0x3B
@@ -212,15 +237,18 @@ class MPU6050 {
 	int enableGyroSelfTest();
 	int disableGyroSelfTest();
 
-	int enableInterrupt();
+	int getDLPFConfig(mpu6050_dlpf_t &cfg);
+	int setDLPFConfig(mpu6050_dlpf_t cfg);
 
 	int selfTest();
 	int accSelfTest();
 	int gyroSelfTest();
 
-	int getInterruptStatus(uint8_t *int_status);
+	int enableInterrupt();
+	int getInterruptStatus(uint8_t &int_status);
 
 	int reset();
+	int reset_paths();
 	int sleep();
 	int wake();
 
