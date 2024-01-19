@@ -17,6 +17,7 @@
 
 namespace arc {
 namespace sensors {
+namespace MPU6050 {
 
 inline static float gyroFactoryTrim(uint8_t factory_trim, bool y)
 {
@@ -48,7 +49,7 @@ int MPU6050::read(uint8_t reg, uint8_t *buf, size_t bytes)
 {
 	int ret = 0;
 
-	if (buf == nullptr || bytes <= 0 || reg > MPU6050_WHO_AM_I_ADDR) {
+	if (buf == nullptr || bytes <= 0 || reg > WHO_AM_I_ADDR) {
 		return -1;
 	}
 
@@ -65,21 +66,21 @@ int MPU6050::read(uint8_t reg, uint8_t *buf, size_t bytes)
 	return 0;
 }
 
-int MPU6050::setAccRange(mpu6050_acc_range_t range)
+int MPU6050::setAccRange(acc_range_t range)
 {
 	switch (range) {
-	case MPU6050_ACC_RANGE_2G:
+	case ACC_RANGE_2G:
 		m_acc_scale = 1.0f / (1 << 14);
 		break;
-	case MPU6050_ACC_RANGE_4G:
+	case ACC_RANGE_4G:
 		m_acc_scale = 1.0f / (1 << 13);
 
 		break;
-	case MPU6050_ACC_RANGE_8G:
+	case ACC_RANGE_8G:
 		m_acc_scale = 1.0f / (1 << 12);
 
 		break;
-	case MPU6050_ACC_RANGE_16G:
+	case ACC_RANGE_16G:
 		m_acc_scale = 1.0f / (1 << 11);
 		break;
 	default:
@@ -88,13 +89,13 @@ int MPU6050::setAccRange(mpu6050_acc_range_t range)
 	}
 
 	uint8_t acc_conf;
-	if (read(MPU6050_ACC_CONF_ADDR, &acc_conf, 1) != 0) {
+	if (read(ACC_CONF_ADDR, &acc_conf, 1) != 0) {
 		return -1;
 	}
 	acc_conf &= 0b11100111; // clear the range bits
 	acc_conf |= range << 3; // set the range bits
 
-	uint8_t data[2] = { MPU6050_ACC_CONF_ADDR, acc_conf };
+	uint8_t data[2] = { ACC_CONF_ADDR, acc_conf };
 	if (i2c_write_blocking(i2c_default, m_address, data, 2, false) != 2) {
 		return -1;
 	}
@@ -104,19 +105,19 @@ int MPU6050::setAccRange(mpu6050_acc_range_t range)
 	return 0;
 }
 
-int MPU6050::setGyroRange(mpu6050_gyro_range_t range)
+int MPU6050::setGyroRange(gyro_range_t range)
 {
 	switch (range) {
-	case MPU6050_GYRO_RANGE_250:
+	case GYRO_RANGE_250:
 		m_gyro_scale = 1.0f / (1 << 14);
 		break;
-	case MPU6050_GYRO_RANGE_500:
+	case GYRO_RANGE_500:
 		m_gyro_scale = 1.0f / (1 << 13);
 		break;
-	case MPU6050_GYRO_RANGE_1000:
+	case GYRO_RANGE_1000:
 		m_gyro_scale = 1.0f / (1 << 12);
 		break;
-	case MPU6050_GYRO_RANGE_2000:
+	case GYRO_RANGE_2000:
 		m_gyro_scale = 1.0f / (1 << 11);
 		break;
 	default:
@@ -130,13 +131,13 @@ int MPU6050::setGyroRange(mpu6050_gyro_range_t range)
 	}
 
 	uint8_t gyro_conf;
-	if (read(MPU6050_GYRO_CONF_ADDR, &gyro_conf, 1) != 0) {
+	if (read(GYRO_CONF_ADDR, &gyro_conf, 1) != 0) {
 		return -1;
 	}
 	gyro_conf &= 0b11100111; // clear the range bits
 	gyro_conf |= range << 3; // set the range bits
 
-	uint8_t data[2] = { MPU6050_GYRO_CONF_ADDR, gyro_conf };
+	uint8_t data[2] = { GYRO_CONF_ADDR, gyro_conf };
 	if (i2c_write_blocking(i2c_default, m_address, data, 2, false) != 2) {
 		return -1;
 	}
@@ -152,7 +153,7 @@ int MPU6050::selfTest()
 
 #ifdef DEBUG
 	uint8_t buf[4];
-	if (read(MPU6050_TEST_X_ADDR, buf, 4) != 0) {
+	if (read(TEST_X_ADDR, buf, 4) != 0) {
 		return -1;
 	};
 
@@ -180,7 +181,7 @@ int MPU6050::accSelfTest()
 	int16_t raw_acc[3];
 	int32_t selftest_response[3] = { 0 };
 
-	if (read(MPU6050_TEST_X_ADDR, buf, 4) != 0) {
+	if (read(TEST_X_ADDR, buf, 4) != 0) {
 		goto ERROR;
 	};
 
@@ -195,35 +196,34 @@ int MPU6050::accSelfTest()
 	}
 
 	enableAccSelfTest();
-	for (uint8_t i = 0; i < MPU6050_SELF_TEST_SAMPLES; i++) {
+	for (uint8_t i = 0; i < SELF_TEST_SAMPLES; i++) {
 		getRawAcc(raw_acc);
 		for (uint8_t j = 0; j < 3; j++) {
 			selftest_response[j] +=
 				static_cast<int32_t>(raw_acc[j]);
 		}
-		sleep_ms(MPU6050_SELF_TEST_SLEEP);
+		sleep_ms(SELF_TEST_SLEEP);
 	}
 
 	disableAccSelfTest();
-	for (uint8_t i = 0; i < MPU6050_SELF_TEST_SAMPLES; i++) {
+	for (uint8_t i = 0; i < SELF_TEST_SAMPLES; i++) {
 		getRawAcc(raw_acc);
 		for (uint8_t j = 0; j < 3; j++) {
 			selftest_response[j] -=
 				static_cast<int32_t>(raw_acc[j]);
 		}
-		sleep_ms(MPU6050_SELF_TEST_SLEEP);
+		sleep_ms(SELF_TEST_SLEEP);
 	}
 
 	for (uint8_t i = 0; i < 3; i++) {
 		m_acc_self_test[i] =
-			((selftest_response[i] / MPU6050_SELF_TEST_SAMPLES) -
-			 FT[i]) /
+			((selftest_response[i] / SELF_TEST_SAMPLES) - FT[i]) /
 			FT[i];
 	}
 
-	if (abs(m_acc_self_test[0]) > MPU6050_SELF_TEST_ACC_THRESHOLD ||
-	    abs(m_acc_self_test[1]) > MPU6050_SELF_TEST_ACC_THRESHOLD ||
-	    abs(m_acc_self_test[2]) > MPU6050_SELF_TEST_ACC_THRESHOLD) {
+	if (abs(m_acc_self_test[0]) > SELF_TEST_ACC_THRESHOLD ||
+	    abs(m_acc_self_test[1]) > SELF_TEST_ACC_THRESHOLD ||
+	    abs(m_acc_self_test[2]) > SELF_TEST_ACC_THRESHOLD) {
 		m_self_test_fail = true;
 		goto ERROR;
 	} else {
@@ -251,7 +251,7 @@ int MPU6050::gyroSelfTest()
 	int16_t raw_gyro[3];
 	int32_t selftest_response[3] = { 0 };
 
-	if (read(MPU6050_TEST_X_ADDR, buf, 4) != 0) {
+	if (read(TEST_X_ADDR, buf, 4) != 0) {
 		goto ERROR;
 	};
 
@@ -261,35 +261,34 @@ int MPU6050::gyroSelfTest()
 	}
 
 	enableGyroSelfTest();
-	for (uint8_t i = 0; i < MPU6050_SELF_TEST_SAMPLES; i++) {
+	for (uint8_t i = 0; i < SELF_TEST_SAMPLES; i++) {
 		getRawGyro(raw_gyro);
 		for (uint8_t j = 0; j < 3; j++) {
 			selftest_response[j] +=
 				static_cast<int32_t>(raw_gyro[j]);
 		}
-		sleep_ms(MPU6050_SELF_TEST_SLEEP);
+		sleep_ms(SELF_TEST_SLEEP);
 	}
 
 	disableGyroSelfTest();
-	for (uint8_t i = 0; i < MPU6050_SELF_TEST_SAMPLES; i++) {
+	for (uint8_t i = 0; i < SELF_TEST_SAMPLES; i++) {
 		getRawGyro(raw_gyro);
 		for (uint8_t j = 0; j < 3; j++) {
 			selftest_response[j] -=
 				static_cast<int32_t>(raw_gyro[j]);
 		}
-		sleep_ms(MPU6050_SELF_TEST_SLEEP);
+		sleep_ms(SELF_TEST_SLEEP);
 	}
 
 	for (uint8_t i = 0; i < 3; i++) {
 		m_gyro_self_test[i] =
-			((selftest_response[i] / MPU6050_SELF_TEST_SAMPLES) -
-			 FT[i]) /
+			((selftest_response[i] / SELF_TEST_SAMPLES) - FT[i]) /
 			FT[i];
 	}
 
-	if (abs(m_gyro_self_test[0]) > MPU6050_SELF_TEST_ACC_THRESHOLD ||
-	    abs(m_gyro_self_test[1]) > MPU6050_SELF_TEST_ACC_THRESHOLD ||
-	    abs(m_gyro_self_test[2]) > MPU6050_SELF_TEST_ACC_THRESHOLD) {
+	if (abs(m_gyro_self_test[0]) > SELF_TEST_ACC_THRESHOLD ||
+	    abs(m_gyro_self_test[1]) > SELF_TEST_ACC_THRESHOLD ||
+	    abs(m_gyro_self_test[2]) > SELF_TEST_ACC_THRESHOLD) {
 		m_self_test_fail = true;
 		goto ERROR;
 	} else {
@@ -308,20 +307,20 @@ ERROR:
 
 int MPU6050::enableAccSelfTest()
 {
-	if (setAccRange(MPU6050_ACC_RANGE_8G) != 0) {
+	if (setAccRange(ACC_RANGE_8G) != 0) {
 		return -1;
 	}
 
 	uint8_t buf;
-	if (read(MPU6050_ACC_CONF_ADDR, &buf, 1) != 0) {
+	if (read(ACC_CONF_ADDR, &buf, 1) != 0) {
 		return -1;
 	}
 
-	buf |= MPU6050_X_ACC_SELF_TEST_BIT;
-	buf |= MPU6050_Y_ACC_SELF_TEST_BIT;
-	buf |= MPU6050_Z_ACC_SELF_TEST_BIT;
+	buf |= X_ACC_SELF_TEST_BIT;
+	buf |= Y_ACC_SELF_TEST_BIT;
+	buf |= Z_ACC_SELF_TEST_BIT;
 
-	uint8_t data[2] = { MPU6050_ACC_CONF_ADDR, buf };
+	uint8_t data[2] = { ACC_CONF_ADDR, buf };
 	if (i2c_write_blocking(i2c_default, m_address, data, 2, false) != 2) {
 		return -1;
 	}
@@ -334,13 +333,13 @@ int MPU6050::enableAccSelfTest()
 int MPU6050::disableAccSelfTest()
 {
 	uint8_t buf;
-	if (read(MPU6050_ACC_CONF_ADDR, &buf, 1) != 0) {
+	if (read(ACC_CONF_ADDR, &buf, 1) != 0) {
 		return -1;
 	}
 
 	buf &= 0b00011111; // reset self test bits
 
-	uint8_t data[2] = { MPU6050_ACC_CONF_ADDR, buf };
+	uint8_t data[2] = { ACC_CONF_ADDR, buf };
 	if (i2c_write_blocking(i2c_default, m_address, data, 2, false) != 2) {
 		return -1;
 	}
@@ -352,20 +351,20 @@ int MPU6050::disableAccSelfTest()
 
 int MPU6050::enableGyroSelfTest()
 {
-	if (setGyroRange(MPU6050_GYRO_RANGE_250) != 0) {
+	if (setGyroRange(GYRO_RANGE_250) != 0) {
 		return -1;
 	}
 
 	uint8_t buf;
-	if (read(MPU6050_GYRO_CONF_ADDR, &buf, 1) != 0) {
+	if (read(GYRO_CONF_ADDR, &buf, 1) != 0) {
 		return -1;
 	}
 
-	buf |= MPU6050_X_GYRO_SELF_TEST_BIT;
-	buf |= MPU6050_Y_GYRO_SELF_TEST_BIT;
-	buf |= MPU6050_Z_GYRO_SELF_TEST_BIT;
+	buf |= X_GYRO_SELF_TEST_BIT;
+	buf |= Y_GYRO_SELF_TEST_BIT;
+	buf |= Z_GYRO_SELF_TEST_BIT;
 
-	uint8_t data[2] = { MPU6050_GYRO_CONF_ADDR, buf };
+	uint8_t data[2] = { GYRO_CONF_ADDR, buf };
 	if (i2c_write_blocking(i2c_default, m_address, data, 2, false) != 2) {
 		return -1;
 	}
@@ -378,13 +377,13 @@ int MPU6050::enableGyroSelfTest()
 int MPU6050::disableGyroSelfTest()
 {
 	uint8_t buf;
-	if (read(MPU6050_GYRO_CONF_ADDR, &buf, 1) != 0) {
+	if (read(GYRO_CONF_ADDR, &buf, 1) != 0) {
 		return -1;
 	}
 
 	buf &= 0b00011111; // reset self test bits
 
-	uint8_t data[2] = { MPU6050_GYRO_CONF_ADDR, buf };
+	uint8_t data[2] = { GYRO_CONF_ADDR, buf };
 	if (i2c_write_blocking(i2c_default, m_address, data, 2, false) != 2) {
 		return -1;
 	}
@@ -401,7 +400,7 @@ int MPU6050::getAcc(float accel[3])
 	}
 
 	uint8_t buf[6];
-	if (read(MPU6050_ACC_X_H_ADDR, buf, 6) != 0) {
+	if (read(ACC_X_H_ADDR, buf, 6) != 0) {
 		return -1;
 	}
 
@@ -429,7 +428,7 @@ int MPU6050::getRawAcc(int16_t accel[3])
 	}
 
 	uint8_t buf[6];
-	if (read(MPU6050_ACC_X_H_ADDR, buf, 6) != 0) {
+	if (read(ACC_X_H_ADDR, buf, 6) != 0) {
 		return -1;
 	}
 
@@ -456,7 +455,7 @@ int MPU6050::getGyro(float gyro[3])
 	}
 
 	uint8_t buf[6];
-	if (read(MPU6050_GYRO_X_H_ADDR, buf, 6) != 0) {
+	if (read(GYRO_X_H_ADDR, buf, 6) != 0) {
 		return -1;
 	}
 
@@ -483,7 +482,7 @@ int MPU6050::getRawGyro(int16_t gyro[3])
 	}
 
 	uint8_t buf[6];
-	if (read(MPU6050_GYRO_X_H_ADDR, buf, 6) != 0) {
+	if (read(GYRO_X_H_ADDR, buf, 6) != 0) {
 		return -1;
 	}
 
@@ -507,16 +506,14 @@ int MPU6050::enableInterrupt()
 {
 	int ret;
 
-	uint8_t buf[] = { MPU6050_INT_PIN_CFG_ADDR,
-			  MPU6050_LATCH_INT_ENABLE_BIT };
+	uint8_t buf[] = { INT_PIN_CFG_ADDR, LATCH_INT_ENABLE_BIT };
 	ret = i2c_write_blocking(i2c_default, m_address, buf, 2, false);
 	if (ret != 2) {
 		return -1;
 	}
 	sleep_ms(10);
 
-	uint8_t buf2[] = { MPU6050_INT_ENABLE_ADDR,
-			   MPU6050_DATA_READY_INT_BIT };
+	uint8_t buf2[] = { INT_ENABLE_ADDR, DATA_READY_INT_BIT };
 	ret = i2c_write_blocking(i2c_default, m_address, buf2, 2, false);
 	if (ret != 2) {
 		return -1;
@@ -528,7 +525,7 @@ int MPU6050::enableInterrupt()
 
 int MPU6050::getInterruptStatus(uint8_t &int_status)
 {
-	if (read(MPU6050_INT_STATUS_ADDR, &int_status, 1) != 0) {
+	if (read(INT_STATUS_ADDR, &int_status, 1) != 0) {
 		return -1;
 	}
 
@@ -538,14 +535,14 @@ int MPU6050::getInterruptStatus(uint8_t &int_status)
 int MPU6050::reset()
 {
 	uint8_t pwr_mgmt;
-	if (read(MPU6050_PWR_MGMT_1_ADDR, &pwr_mgmt) != 0) {
+	if (read(PWR_MGMT_1_ADDR, &pwr_mgmt) != 0) {
 		return -1;
 	}
 
 	int ret;
 
-	uint8_t reset_mask = pwr_mgmt | MPU6050_RESET_BIT;
-	uint8_t buf[] = { MPU6050_PWR_MGMT_1_ADDR, reset_mask };
+	uint8_t reset_mask = pwr_mgmt | RESET_BIT;
+	uint8_t buf[] = { PWR_MGMT_1_ADDR, reset_mask };
 	ret = i2c_write_blocking(i2c_default, m_address, buf, 2, false);
 	if (ret != 2) {
 		return -1;
@@ -559,9 +556,8 @@ int MPU6050::reset_paths()
 {
 	int ret;
 
-	uint8_t reset_mask = MPU6050_GYRO_RESET_BIT | MPU6050_ACC_RESET_BIT |
-			     MPU6050_TEMP_RESET_BIT;
-	uint8_t buf[] = { MPU6050_SIGNAL_PATH_RESET_ADDR, reset_mask };
+	uint8_t reset_mask = GYRO_RESET_BIT | ACC_RESET_BIT | TEMP_RESET_BIT;
+	uint8_t buf[] = { SIGNAL_PATH_RESET_ADDR, reset_mask };
 	ret = i2c_write_blocking(i2c_default, m_address, buf, 2, false);
 	if (ret != 2) {
 		return -1;
@@ -574,12 +570,12 @@ int MPU6050::reset_paths()
 int MPU6050::sleep()
 {
 	uint8_t pwr_mgmt;
-	if (read(MPU6050_PWR_MGMT_1_ADDR, &pwr_mgmt) != 0) {
+	if (read(PWR_MGMT_1_ADDR, &pwr_mgmt) != 0) {
 		return -1;
 	}
 
-	uint8_t sleep_mask = pwr_mgmt & MPU6050_SLEEP_BIT;
-	uint8_t buf2[] = { MPU6050_PWR_MGMT_1_ADDR, sleep_mask };
+	uint8_t sleep_mask = pwr_mgmt & SLEEP_BIT;
+	uint8_t buf2[] = { PWR_MGMT_1_ADDR, sleep_mask };
 	int ret = i2c_write_blocking(i2c_default, m_address, buf2, 2, false);
 	if (ret != 2) {
 		return -1;
@@ -592,12 +588,12 @@ int MPU6050::sleep()
 int MPU6050::wake()
 {
 	uint8_t pwr_mgmt;
-	if (read(MPU6050_PWR_MGMT_1_ADDR, &pwr_mgmt) != 0) {
+	if (read(PWR_MGMT_1_ADDR, &pwr_mgmt) != 0) {
 		return -1;
 	}
 
-	uint8_t wake_mask = pwr_mgmt & ~MPU6050_SLEEP_BIT;
-	uint8_t buf2[] = { MPU6050_PWR_MGMT_1_ADDR, wake_mask };
+	uint8_t wake_mask = pwr_mgmt & ~SLEEP_BIT;
+	uint8_t buf2[] = { PWR_MGMT_1_ADDR, wake_mask };
 	int ret = i2c_write_blocking(i2c_default, m_address, buf2, 2, false);
 	if (ret != 2) {
 		return -1;
@@ -607,28 +603,28 @@ int MPU6050::wake()
 	return 0;
 }
 
-int MPU6050::getDLPFConfig(mpu6050_dlpf_t &cfg)
+int MPU6050::getDLPFConfig(dlpf_t &cfg)
 {
 	uint8_t dlpf_cfg;
-	if (read(MPU6050_CONFIG_ADDR, &dlpf_cfg) != 0) {
+	if (read(CONFIG_ADDR, &dlpf_cfg) != 0) {
 		return -1;
 	}
 
-	cfg = static_cast<mpu6050_dlpf_t>(dlpf_cfg & MPU6050_DLPF_CFG_BITS);
+	cfg = static_cast<dlpf_t>(dlpf_cfg & DLPF_CFG_BITS);
 
 	return 0;
 }
 
-int MPU6050::setDLPFConfig(mpu6050_dlpf_t cfg)
+int MPU6050::setDLPFConfig(dlpf_t cfg)
 {
 	uint8_t dlpf_cfg;
-	if (read(MPU6050_CONFIG_ADDR, &dlpf_cfg) != 0) {
+	if (read(CONFIG_ADDR, &dlpf_cfg) != 0) {
 		return -1;
 	}
 
-	dlpf_cfg &= ~MPU6050_DLPF_CFG_BITS; // clear the dlpf bits
+	dlpf_cfg &= ~DLPF_CFG_BITS; // clear the dlpf bits
 	dlpf_cfg |= cfg; // set the dlpf bits
-	uint8_t buf2[] = { MPU6050_CONFIG_ADDR, dlpf_cfg };
+	uint8_t buf2[] = { CONFIG_ADDR, dlpf_cfg };
 	int ret = i2c_write_blocking(i2c_default, m_address, buf2, 2, false);
 	if (ret != 2) {
 		return -1;
@@ -638,5 +634,6 @@ int MPU6050::setDLPFConfig(mpu6050_dlpf_t cfg)
 	return 0;
 }
 
+} // MPU6050
 } // namespace sensors
 } // namespace arc

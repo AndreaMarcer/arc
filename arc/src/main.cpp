@@ -18,10 +18,9 @@
 #include "hardware/gpio.h"
 #include "sensors/MPU6050.hpp"
 
-uint32_t cnt = 0;
+using namespace arc::sensors;
 
-uint8_t int_status_addr = MPU6050_INT_STATUS_ADDR;
-uint8_t buf;
+uint32_t cnt = 0;
 bool new_data = false;
 uint64_t interrupt_time = 0;
 
@@ -51,8 +50,8 @@ int main()
 	gpio_set_irq_enabled_with_callback(9, GPIO_IRQ_EDGE_RISE, true,
 					   &gpio_callback);
 
-	arc::sensors::MPU6050 mpu6050{ 0x68 };
-	mpu6050.setDLPFConfig(arc::sensors::MPU6050_DLPF_184HZ);
+	MPU6050::MPU6050 mpu6050{ 0x68 };
+	mpu6050.setDLPFConfig(MPU6050::DLPF_184HZ);
 	mpu6050.enableInterrupt();
 	mpu6050.wake();
 
