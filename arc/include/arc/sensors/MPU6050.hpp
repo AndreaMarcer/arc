@@ -214,6 +214,10 @@ typedef enum {
 #define MPU6050_WHO_AM_I_ADDR 0x75
 #define MPU6050_WHO_AM_I_BITS 0x7E
 
+#define MPU6050_SELF_TEST_SAMPLES 20
+#define MPU6050_SELF_TEST_SLEEP 10
+#define MPU6050_SELF_TEST_ACC_THRESHOLD 0.1
+
 class MPU6050 {
     public:
 	//TODO: pass i2c instance to constructor
@@ -265,9 +269,9 @@ class MPU6050 {
 	uint8_t m_acc_scale_index{ 0 };
 	uint8_t m_gyro_scale_index{ 0 };
 	uint8_t m_DLPF_conf{ 0 };
-	float m_acc_self_test[3]; // %
-	float m_gyro_self_test[3]; // %
-	bool fail{ false };
+	float m_acc_self_test[3];
+	float m_gyro_self_test[3];
+	bool m_self_test_fail{ false };
 };
 
 } // namespace sensors

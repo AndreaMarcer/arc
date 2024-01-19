@@ -38,13 +38,9 @@ MPU6050::MPU6050(uint8_t address)
 	: m_address{ address }
 {
 	reset();
-
 	reset_paths();
-
 	wake();
-
 	selfTest();
-
 	sleep();
 }
 
@@ -74,21 +70,17 @@ int MPU6050::setAccRange(mpu6050_acc_range_t range)
 	switch (range) {
 	case MPU6050_ACC_RANGE_2G:
 		m_acc_scale = 1.0f / (1 << 14);
-		printf("Acc range set to 2g\n");
 		break;
 	case MPU6050_ACC_RANGE_4G:
 		m_acc_scale = 1.0f / (1 << 13);
-		printf("Acc range set to 4g\n");
 
 		break;
 	case MPU6050_ACC_RANGE_8G:
 		m_acc_scale = 1.0f / (1 << 12);
-		printf("Acc range set to 8g\n");
 
 		break;
 	case MPU6050_ACC_RANGE_16G:
 		m_acc_scale = 1.0f / (1 << 11);
-		printf("Acc range set to 16g\n");
 		break;
 	default:
 		printf("INVALID Acc range\n");
@@ -117,22 +109,15 @@ int MPU6050::setGyroRange(mpu6050_gyro_range_t range)
 	switch (range) {
 	case MPU6050_GYRO_RANGE_250:
 		m_gyro_scale = 1.0f / (1 << 14);
-		printf("Gyro range set to 250\n");
 		break;
 	case MPU6050_GYRO_RANGE_500:
 		m_gyro_scale = 1.0f / (1 << 13);
-		printf("Gyro range set to 500\n");
-
 		break;
 	case MPU6050_GYRO_RANGE_1000:
 		m_gyro_scale = 1.0f / (1 << 12);
-		printf("Gyro range set to 1000\n");
-
 		break;
 	case MPU6050_GYRO_RANGE_2000:
 		m_gyro_scale = 1.0f / (1 << 11);
-		printf("Gyro range set to 2000\n");
-
 		break;
 	default:
 		printf("INVALID Gyro range\n");
@@ -163,8 +148,9 @@ int MPU6050::setGyroRange(mpu6050_gyro_range_t range)
 
 int MPU6050::selfTest()
 {
-	printf("\nSELF TEST\n");
+	printf("\nSELF TEST:\n");
 
+#ifdef DEBUG
 	uint8_t buf[4];
 	if (read(MPU6050_TEST_X_ADDR, buf, 4) != 0) {
 		return -1;
@@ -175,6 +161,7 @@ int MPU6050::selfTest()
 		printf("0x%02.X: %s\n", 0x0D + i, TO_BIT_STR(buf[i]));
 	}
 	printf("=========================\n");
+#endif
 
 	accSelfTest();
 	gyroSelfTest();
@@ -184,15 +171,14 @@ int MPU6050::selfTest()
 
 int MPU6050::accSelfTest()
 {
-	printf("\n===== ACCELEROMETER =====\n");
+	printf(" - Accelerometer: ");
 
 	uint8_t buf[4];
 	float FT[3];
 	int8_t acc_fact_test[3];
 	uint8_t reg_10_mask = 0b00110000;
 	int16_t raw_acc[3];
-	float acc[3];
-	int16_t selftest_response[3];
+	int32_t selftest_response[3] = { 0 };
 
 	if (read(MPU6050_TEST_X_ADDR, buf, 4) != 0) {
 		goto ERROR;
@@ -206,63 +192,64 @@ int MPU6050::accSelfTest()
 
 		FT[i] = accFactoryTrim(acc_fact_test[i]);
 		reg_10_mask >>= 2;
-
-		printf("[%hhu] AFT %hhd, FT: %f\n", i, acc_fact_test[i], FT[i]);
 	}
-	printf("\n");
 
 	enableAccSelfTest();
-	printf("\nSELF TEST ENABLED\n");
-	getRawAcc(raw_acc);
-	printRawAcc(raw_acc);
-	getAcc(acc);
-	printAcc(acc);
-	for (uint8_t i = 0; i < 3; i++) {
-		selftest_response[i] = raw_acc[i];
+	for (uint8_t i = 0; i < MPU6050_SELF_TEST_SAMPLES; i++) {
+		getRawAcc(raw_acc);
+		for (uint8_t j = 0; j < 3; j++) {
+			selftest_response[j] +=
+				static_cast<int32_t>(raw_acc[j]);
+		}
+		sleep_ms(MPU6050_SELF_TEST_SLEEP);
 	}
-	sleep_ms(10);
 
 	disableAccSelfTest();
-	printf("\nSELF TEST DISABLED\n");
-	getRawAcc(raw_acc);
-	printRawAcc(raw_acc);
-	getAcc(acc);
-	printAcc(acc);
-
-	printf("\nSELF TEST COMPUTE\nSelf Test: [ ");
-	for (uint8_t i = 0; i < 3; i++) {
-		selftest_response[i] -= raw_acc[i];
-		m_acc_self_test[i] = (selftest_response[i] - FT[i]) / FT[i];
-		printf("%f, ", m_acc_self_test[i]);
+	for (uint8_t i = 0; i < MPU6050_SELF_TEST_SAMPLES; i++) {
+		getRawAcc(raw_acc);
+		for (uint8_t j = 0; j < 3; j++) {
+			selftest_response[j] -=
+				static_cast<int32_t>(raw_acc[j]);
+		}
+		sleep_ms(MPU6050_SELF_TEST_SLEEP);
 	}
-	printf(" ]\n");
 
-	if (abs(m_acc_self_test[0]) > 0.1f || abs(m_acc_self_test[1]) > 0.1f ||
-	    abs(m_acc_self_test[2]) > 0.1f) {
-		fail = true;
+	for (uint8_t i = 0; i < 3; i++) {
+		m_acc_self_test[i] =
+			((selftest_response[i] / MPU6050_SELF_TEST_SAMPLES) -
+			 FT[i]) /
+			FT[i];
+	}
+
+	if (abs(m_acc_self_test[0]) > MPU6050_SELF_TEST_ACC_THRESHOLD ||
+	    abs(m_acc_self_test[1]) > MPU6050_SELF_TEST_ACC_THRESHOLD ||
+	    abs(m_acc_self_test[2]) > MPU6050_SELF_TEST_ACC_THRESHOLD) {
+		m_self_test_fail = true;
 		goto ERROR;
 	} else {
-		printf("\n !!! SELF TEST SUCCEDED !!!\n");
+		printf("Self Test Succeded => X: %f, Y: %f, Z: %f\n",
+		       m_acc_self_test[0], m_acc_self_test[1],
+		       m_acc_self_test[2]);
 	}
 
 	return 0;
 
 ERROR:
-	printf(" !!! Self test failed !!!\n");
-	printf("=========================\n");
+	printf("Self Test FAILED => X: %f, Y: %f, Z: %f\n", m_acc_self_test[0],
+	       m_acc_self_test[1], m_acc_self_test[2]);
+
 	return -1;
 }
 
 int MPU6050::gyroSelfTest()
 {
-	printf("\n======= GYROSCOPE =======\n");
+	printf(" - Gyroscope: ");
 
 	uint8_t buf[4];
 	float FT[3];
 	int8_t gyro_fact_test[3];
 	int16_t raw_gyro[3];
-	float gyro[3];
-	int16_t selftest_response[3];
+	int32_t selftest_response[3] = { 0 };
 
 	if (read(MPU6050_TEST_X_ADDR, buf, 4) != 0) {
 		goto ERROR;
@@ -270,54 +257,52 @@ int MPU6050::gyroSelfTest()
 
 	for (uint8_t i = 0; i < 3; i++) {
 		gyro_fact_test[i] = buf[i] & 0b00011111;
-
 		FT[i] = gyroFactoryTrim(gyro_fact_test[i], i == 1);
-
-		printf("[%hhu] GFT %hhd, FT: %f\n", i, gyro_fact_test[i],
-		       FT[i]);
 	}
-	printf("\n");
 
 	enableGyroSelfTest();
-	printf("\nSELF TEST ENABLED\n");
-	getRawGyro(raw_gyro);
-	printRawGyro(raw_gyro);
-	getGyro(gyro);
-	printGyro(gyro);
-	for (uint8_t i = 0; i < 3; i++) {
-		selftest_response[i] = raw_gyro[i];
+	for (uint8_t i = 0; i < MPU6050_SELF_TEST_SAMPLES; i++) {
+		getRawGyro(raw_gyro);
+		for (uint8_t j = 0; j < 3; j++) {
+			selftest_response[j] +=
+				static_cast<int32_t>(raw_gyro[j]);
+		}
+		sleep_ms(MPU6050_SELF_TEST_SLEEP);
 	}
-	sleep_ms(10);
 
 	disableGyroSelfTest();
-	printf("\nSELF TEST DISABLED\n");
-	getRawGyro(raw_gyro);
-	printRawGyro(raw_gyro);
-	getGyro(gyro);
-	printGyro(gyro);
-
-	printf("\nSELF TEST COMPUTE\nSelf Test: [ ");
-	for (uint8_t i = 0; i < 3; i++) {
-		selftest_response[i] -= raw_gyro[i];
-		m_gyro_self_test[i] = (selftest_response[i] - FT[i]) / FT[i];
-		printf("%f, ", m_gyro_self_test[i]);
+	for (uint8_t i = 0; i < MPU6050_SELF_TEST_SAMPLES; i++) {
+		getRawGyro(raw_gyro);
+		for (uint8_t j = 0; j < 3; j++) {
+			selftest_response[j] -=
+				static_cast<int32_t>(raw_gyro[j]);
+		}
+		sleep_ms(MPU6050_SELF_TEST_SLEEP);
 	}
-	printf(" ]\n");
 
-	if (abs(m_gyro_self_test[0]) > 0.1f ||
-	    abs(m_gyro_self_test[1]) > 0.1f ||
-	    abs(m_gyro_self_test[2]) > 0.1f) {
-		fail = true;
+	for (uint8_t i = 0; i < 3; i++) {
+		m_gyro_self_test[i] =
+			((selftest_response[i] / MPU6050_SELF_TEST_SAMPLES) -
+			 FT[i]) /
+			FT[i];
+	}
+
+	if (abs(m_gyro_self_test[0]) > MPU6050_SELF_TEST_ACC_THRESHOLD ||
+	    abs(m_gyro_self_test[1]) > MPU6050_SELF_TEST_ACC_THRESHOLD ||
+	    abs(m_gyro_self_test[2]) > MPU6050_SELF_TEST_ACC_THRESHOLD) {
+		m_self_test_fail = true;
 		goto ERROR;
 	} else {
-		printf("\n !!! SELF TEST SUCCEDED !!!\n");
+		printf("Self Test Succeded => X: %f, Y: %f, Z: %f\n",
+		       m_gyro_self_test[0], m_gyro_self_test[1],
+		       m_gyro_self_test[2]);
 	}
 
 	return 0;
 
 ERROR:
-	printf(" !!! Self test failed !!!\n");
-	printf("=========================\n");
+	printf("Self Test FAILED => X: %f, Y: %f, Z: %f\n", m_gyro_self_test[0],
+	       m_gyro_self_test[1], m_gyro_self_test[2]);
 	return -1;
 }
 
