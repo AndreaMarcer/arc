@@ -33,11 +33,6 @@ int main()
 {
 	stdio_init_all();
 
-	log_debug("START %d\n", 0);
-	log_error("START %d\n", 1);
-	log_warning("START %d\n", 2);
-	log_info("START %d\n", 3);
-
 	// This example will use I2C0 on the default SDA and SCL pins (4, 5 on a Pico)
 	i2c_init(i2c_default, 400 * 1000);
 	gpio_set_function(PICO_DEFAULT_I2C_SDA_PIN, GPIO_FUNC_I2C);

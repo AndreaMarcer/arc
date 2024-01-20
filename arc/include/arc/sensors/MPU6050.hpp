@@ -217,7 +217,8 @@ constexpr uint8_t WHO_AM_I_BITS = 0x7E;
 
 constexpr uint8_t SELF_TEST_SAMPLES = 20;
 constexpr uint8_t SELF_TEST_SLEEP = 10;
-constexpr uint8_t SELF_TEST_ACC_THRESHOLD = 0.1;
+constexpr float SELF_TEST_ACC_THRESHOLD = 0.1;
+constexpr float SELF_TEST_GYRO_THRESHOLD = 0.1;
 
 class MPU6050 {
     public:
@@ -241,6 +242,8 @@ class MPU6050 {
 	int setGyroRange(gyro_range_t range);
 	int enableGyroSelfTest();
 	int disableGyroSelfTest();
+	void setGyroRad();
+	void setGyroDeg();
 
 	int getDLPFConfig(dlpf_t &cfg);
 	int setDLPFConfig(dlpf_t cfg);
@@ -258,7 +261,7 @@ class MPU6050 {
 	int wake();
 
     private:
-	bool m_is_gyro_rad{ false };
+	bool m_gyro_in_rad{ false };
 	uint8_t m_address{ 0 };
 	float m_acc_scale{ 1.0 };
 	float m_gyro_scale{ 1.0 };

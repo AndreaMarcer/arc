@@ -14,7 +14,7 @@
 #include "math.h"
 #include <bitset>
 
-#define TO_BIT_STR(x) std::bitset<8>(x).to_string().c_str()
+#define BYTE2STR(x) std::bitset<8>(x).to_string().c_str()
 
 #define MULTILINE_DEFINE_BEGINE do {
 #define MULTILINE_DEFINE_END \
@@ -23,6 +23,9 @@
 
 namespace arc {
 namespace common {
+
+constexpr float DEG2RAD = M_PI / 180.0f;
+constexpr float RAD2DEG = 180.0f / M_PI;
 
 inline float modf(float vec[3])
 {
