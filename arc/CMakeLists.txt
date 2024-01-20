@@ -8,6 +8,7 @@ set(HEADERS
 include/arc/sensors/MPU6050.hpp
 include/arc/common/constants.hpp
 include/arc/common/common.hpp
+include/arc/common/log.hpp
 )
 
 add_executable(arc ${SRCS} ${HEADERS})
