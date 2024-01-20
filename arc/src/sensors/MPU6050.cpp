@@ -159,7 +159,7 @@ int MPU6050::selfTest()
 
 	printf("\n======= REGISTERS =======\n");
 	for (uint8_t i = 0; i < 4; i++) {
-		printf("0x%02.X: %s\n", 0x0D + i, TO_BIT_STR(buf[i]));
+		printf("0x%02.X: %s\n", 0x0D + i, BYTE2STR(buf[i]));
 	}
 	printf("=========================\n");
 #endif
