@@ -22,7 +22,8 @@ if (CMAKE_C_COMPILER_ID STREQUAL "GNU")
     add_compile_options(-Wno-maybe-uninitialized)
 endif()
 
-add_compile_definitions(LOG_DEBUG LOG_LEVEL=3)
+# Logging defines
+add_compile_definitions(LOG_DEBUG LOG_LEVEL=3 LOG_COLOR)
 
 # Include project
 add_subdirectory(arc)
