@@ -16,6 +16,11 @@
 
 #define TO_BIT_STR(x) std::bitset<8>(x).to_string().c_str()
 
+#define MULTILINE_DEFINE_BEGINE do {
+#define MULTILINE_DEFINE_END \
+	}                    \
+	while (0)
+
 namespace arc {
 namespace common {
 
