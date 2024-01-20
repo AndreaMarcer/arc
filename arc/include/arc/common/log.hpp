@@ -12,6 +12,7 @@
 #pragma once
 
 #include "pico/stdlib.h"
+#include <string.h>
 
 #define LOG_ERROR 1
 #define LOG_WARNING 2
@@ -24,6 +25,8 @@
 
 #define BOLD "\e[1m"
 
+#define FILENAME(x) strstr(x, "/arc") + 5
+
 #ifdef LOG_DEBUG
 #define log_debug(M, ...)                                              \
 	MULTILINE_DEFINE_BEGINE                                        \
@@ -34,9 +37,10 @@
 #endif
 
 #if LOG_LEVEL >= LOG_ERROR
-#define log_error(M, ...)                                           \
-	MULTILINE_DEFINE_BEGINE                                     \
-	fprintf(stdout, BOLD RED "[ERROR] " NONE M, ##__VA_ARGS__); \
+#define log_error(M, ...)                                               \
+	MULTILINE_DEFINE_BEGINE                                         \
+	fprintf(stdout, BOLD RED "[ERROR] {./%s:%d} %s(): " NONE M,     \
+		FILENAME(__FILE__), __LINE__, __func__, ##__VA_ARGS__); \
 	MULTILINE_DEFINE_END
 #else
 #define log_error(m, ...)
