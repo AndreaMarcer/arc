@@ -15,6 +15,8 @@
 #include "hardware/gpio.h"
 #include "sensors/MPU6050.hpp"
 #include "common/log.hpp"
+#include "common/common.hpp"
+#include "math.h"
 
 using namespace arc::sensors;
 
@@ -51,16 +53,18 @@ int main()
 
 	sleep_ms(100);
 
-	float acc[3];
+	arc::common::acc_t acc;
+	arc::common::acc_t gyro;
 	uint8_t tmp;
-	while (0) {
+	while (1) {
 		if (new_data) {
-			mpu6050.getAcc(acc);
-			printf("%u, %f,%f,%f %lu\n", cnt, acc[0], acc[1],
-			       acc[2], time_us_64() - interrupt_time);
-
+			mpu6050.getAcc(acc.vec);
+			mpu6050.getGyro(gyro.vec);
+			printf("%u, %f,%f,%f %f,%f,%f %lu\n", cnt, acc.x, acc.y,
+			       acc.z, gyro.x, gyro.y, gyro.z,
+			       time_us_64() - interrupt_time);
 			new_data = false;
-			sleep_ms(100);
+			sleep_ms(1000);
 			mpu6050.getInterruptStatus(tmp);
 		}
 	}

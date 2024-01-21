@@ -19,6 +19,10 @@
 #define MPU6050_SELF_TEST_ACC_THR 0.1
 #define MPU6050_SELF_TEST_GYRO_THR 0.1
 
+#define MPU6050_GYRO_CALIB_SAMPLES 1000
+#define MPU6050_GYRO_CALIB_THR 500
+#define MPU6050_GYRO_CALIB_SLEEP 1
+
 namespace arc {
 namespace sensors {
 
@@ -94,11 +98,13 @@ class MPU6050 {
 	int getGyro(float gyro[3]);
 	void printRawGyro(int16_t gyro[3]);
 	void printGyro(float gyro[3]);
-	int setGyroRange(GyroRange range);
+	int setGyroRange(GyroRange range, bool recalibrate = true);
+	int getGyroRange(GyroRange &range);
 	int enableGyroSelfTest();
 	int disableGyroSelfTest();
 	void setGyroRad();
 	void setGyroDeg();
+	int calibrateGyro();
 
 	int getDLPFConfig(DlpfBW &cfg);
 	int setDLPFConfig(DlpfBW cfg);
@@ -128,7 +134,9 @@ class MPU6050 {
 	uint8_t m_DLPF_conf{ 0 };
 	uint8_t m_gyro_scale_index{ 0 };
 	float m_gyro_scale{ 1.0 };
+	int16_t m_gyro_offset[3]{ 0 };
 	bool m_gyro_in_rad{ false };
+	bool m_gyro_calibrated{ false };
 	float m_gyro_self_test[3];
 
 	bool m_temp_enabled{ false };

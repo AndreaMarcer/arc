@@ -40,20 +40,20 @@ static constexpr uint8_t SMPLRT_DIV_ADDR = 0x19;
 
 static constexpr uint8_t CONFIG_ADDR = 0x1A;
 static constexpr uint8_t EXT_SYNC_SET_BITS = 0x38;
-static constexpr uint8_t DLPF_CFG_BITS = 0x7;
+static constexpr uint8_t DLPF_CFG_BITS = 0b00000111;
 
 static constexpr uint8_t GYRO_CONF_ADDR = 0x1B;
 static constexpr uint8_t X_GYRO_SELF_TEST_BIT = (1 << 7);
 static constexpr uint8_t Y_GYRO_SELF_TEST_BIT = (1 << 6);
 static constexpr uint8_t Z_GYRO_SELF_TEST_BIT = (1 << 5);
-static constexpr uint8_t GYRO_RANGE_BITS = 0x18;
+static constexpr uint8_t GYRO_RANGE_BITS = 0b00011000;
 
 static constexpr uint8_t ACC_CONF_ADDR = 0x1C;
 static constexpr uint8_t X_ACC_SELF_TEST_BIT = (1 << 7);
 static constexpr uint8_t Y_ACC_SELF_TEST_BIT = (1 << 6);
 static constexpr uint8_t Z_ACC_SELF_TEST_BIT = (1 << 5);
-static constexpr uint8_t ACC_SCALE_BITS = 0x18;
-static constexpr uint8_t ACC_DHPF_BITS = 0x7;
+static constexpr uint8_t ACC_SCALE_BITS = 0b00011000;
+static constexpr uint8_t ACC_DHPF_BITS = 0b00000111;
 
 static constexpr uint8_t FIFO_EN_ADDR = 0x23;
 static constexpr uint8_t TEMP_FIFO_ENABLE_BIT = (1 << 7);
@@ -169,6 +169,10 @@ static constexpr uint8_t SELF_TEST_SLEEP = MPU6050_SELF_TEST_SLEEP;
 static constexpr float SELF_TEST_ACC_THR = MPU6050_SELF_TEST_ACC_THR;
 static constexpr float SELF_TEST_GYRO_THR = MPU6050_SELF_TEST_GYRO_THR;
 
+static constexpr uint16_t GYRO_CALIB_SAMPLES = MPU6050_GYRO_CALIB_SAMPLES;
+static constexpr uint64_t GYRO_CALIB_THR = MPU6050_GYRO_CALIB_THR;
+static constexpr uint64_t GYRO_CALIB_SLEEP = MPU6050_GYRO_CALIB_SLEEP;
+
 inline static float gyroFactoryTrim(uint8_t factory_trim, bool y)
 {
 	if (factory_trim == 0)
@@ -189,10 +193,14 @@ MPU6050::MPU6050(i2c_inst_t *i2c_inst, uint8_t address)
 	: m_i2c_inst{ i2c_inst }
 	, m_addr{ address }
 {
+	// TODO: add function return check
 	reset();
 	reset_paths();
 	wake();
 	selfTest();
+	if (!m_self_test_fail) {
+		calibrateGyro();
+	}
 	sleep();
 }
 
@@ -269,7 +277,7 @@ int MPU6050::setAccRange(AccRange range)
 	return 0;
 }
 
-int MPU6050::setGyroRange(GyroRange range)
+int MPU6050::setGyroRange(GyroRange range, bool recalibrate)
 {
 	if (range < GyroRange::_250 || range > GyroRange::_2000) {
 		log_error("Invalid argument\n");
@@ -284,13 +292,24 @@ int MPU6050::setGyroRange(GyroRange range)
 		return ret;
 	}
 
-	gyro_conf &= 0b11100111; // clear the range bits
+	gyro_conf &= ~GYRO_RANGE_BITS; // clear the range bits
 	gyro_conf |= static_cast<uint8_t>(range) << 3; // set the range bits
 	uint8_t data[2] = { GYRO_CONF_ADDR, gyro_conf };
 	ret = i2c_write_blocking(m_i2c_inst, m_addr, data, 2, false);
 	if (ret != 2) {
 		log_error("Error in i2c_write_blocking()\n");
 		return EIO;
+	}
+
+	if (recalibrate) {
+		ret = calibrateGyro();
+		if (ret != 0) {
+			log_error("Error in calibrateGyro(). (%s)\n",
+				  strerror(ret));
+			return ret;
+		}
+	} else {
+		log_debug("Skip recalibration\n");
 	}
 
 	switch (range) {
@@ -319,6 +338,19 @@ int MPU6050::setGyroRange(GyroRange range)
 
 	sleep_ms(10);
 
+	return 0;
+}
+
+int MPU6050::getGyroRange(GyroRange &range)
+{
+	int ret = 0;
+	uint8_t gyro_conf;
+	ret = read(GYRO_CONF_ADDR, &gyro_conf, 1);
+	if (ret != 0) {
+		log_error("Error in read(). (%s)\n", strerror(ret));
+		return ret;
+	}
+	range = static_cast<GyroRange>((gyro_conf & GYRO_RANGE_BITS) >> 3);
 	return 0;
 }
 
@@ -628,7 +660,7 @@ int MPU6050::enableGyroSelfTest()
 {
 	int ret = 0;
 
-	ret = setGyroRange(GyroRange::_250);
+	ret = setGyroRange(GyroRange::_250, false);
 	if (ret != 0) {
 		log_error("Error in setGyroRange(). (%s)\n", strerror(ret));
 		return ret;
@@ -756,9 +788,15 @@ int MPU6050::getGyro(float gyro[3])
 		return ret;
 	}
 
-	gyro[0] = static_cast<int16_t>((buf[0] << 8) | buf[1]) * m_gyro_scale;
-	gyro[1] = static_cast<int16_t>((buf[2] << 8) | buf[3]) * m_gyro_scale;
-	gyro[2] = static_cast<int16_t>((buf[4] << 8) | buf[5]) * m_gyro_scale;
+	gyro[0] = (static_cast<int16_t>((buf[0] << 8) | buf[1]) -
+		   m_gyro_offset[0]) *
+		  m_gyro_scale;
+	gyro[1] = (static_cast<int16_t>((buf[2] << 8) | buf[3]) -
+		   m_gyro_offset[1]) *
+		  m_gyro_scale;
+	gyro[2] = (static_cast<int16_t>((buf[4] << 8) | buf[5]) -
+		   m_gyro_offset[2]) *
+		  m_gyro_scale;
 
 	return 0;
 }
@@ -953,6 +991,82 @@ int MPU6050::setDLPFConfig(DlpfBW cfg)
 	}
 	sleep_ms(10);
 
+	return 0;
+}
+
+int MPU6050::calibrateGyro()
+{
+	int ret = 0;
+	m_gyro_calibrated = false;
+
+	GyroRange gyro_range;
+	ret = getGyroRange(gyro_range);
+	if (ret != 0) {
+		log_error("Error in getGyroRange(). (%s)\n", strerror(ret));
+		return ret;
+	}
+
+	log_info("Gyro Calibration. STAY STILL\n");
+	int16_t raw_gyro[GYRO_CALIB_SAMPLES][3];
+	for (uint16_t i = 0; i < GYRO_CALIB_SAMPLES; i++) {
+		ret = getRawGyro(raw_gyro[i]);
+		if (ret != 0) {
+			log_error("Error in getRawGyro(). (%s)\n",
+				  strerror(ret));
+			return ret;
+		}
+		sleep_ms(GYRO_CALIB_SLEEP);
+	}
+	log_info("Gyro Calibration FINISHED\n");
+
+	int64_t gyro_sum[3] = { 0 };
+	for (uint16_t i = 0; i < GYRO_CALIB_SAMPLES; i++) {
+		for (uint8_t j = 0; j < 3; j++) {
+			gyro_sum[j] += static_cast<int64_t>(raw_gyro[i][j]);
+		}
+	}
+
+	log_debug("Gyro Offset: ");
+	int16_t gyro_mean[3] = { 0 };
+	for (uint8_t j = 0; j < 3; j++) {
+		gyro_mean[j] = gyro_sum[j] / GYRO_CALIB_SAMPLES;
+		log_debug_s("%hd, ", gyro_mean[j]);
+	}
+	log_debug_s("\n");
+
+	uint64_t gyro_sum_squared[3] = { 0 };
+	for (uint16_t i = 0; i < GYRO_CALIB_SAMPLES; i++) {
+		for (uint8_t j = 0; j < 3; j++) {
+			gyro_sum_squared[j] += (raw_gyro[i][j] - gyro_mean[j]) *
+					       (raw_gyro[i][j] - gyro_mean[j]);
+		}
+	}
+
+	log_debug("Gyro STD: ");
+	uint64_t gyro_std[3] = { 0 };
+	for (uint8_t j = 0; j < 3; j++) {
+		gyro_std[j] = gyro_sum_squared[j] / (GYRO_CALIB_SAMPLES - 1);
+		log_debug_s("%llu, ", gyro_std[j]);
+	}
+	log_debug_s("\n");
+
+	uint64_t gyro_std_thr =
+		GYRO_CALIB_THR /
+		(1 << ((static_cast<uint64_t>(gyro_range) * 2)));
+	log_debug("Gyro STD Threshold: %llu\n", gyro_std_thr);
+	for (uint8_t j = 0; j < 3; j++) {
+		if (gyro_std[j] > gyro_std_thr) {
+			log_warning(
+				"Gyroscope calibration FAILED. STD too high\n");
+			return EFAULT;
+		}
+	}
+
+	for (uint8_t j = 0; j < 3; j++) {
+		m_gyro_offset[j] = gyro_mean[j];
+	}
+
+	m_gyro_calibrated = true;
 	return 0;
 }
 
