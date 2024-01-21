@@ -19,7 +19,156 @@
 
 namespace arc {
 namespace sensors {
-namespace MPU6050 {
+
+static constexpr uint8_t TEST_X_ADDR = 0x0D;
+static constexpr uint8_t XA_TEST_4_2_BITS = 0xE0;
+static constexpr uint8_t XG_TEST_BITS = 0x1F;
+
+static constexpr uint8_t TEST_Y_ADDR = 0x0E;
+static constexpr uint8_t YA_TEST_4_2_BITS = 0xE0;
+static constexpr uint8_t YG_TEST_BITS = 0x1F;
+
+static constexpr uint8_t TEST_Z_ADDR = 0x0F;
+static constexpr uint8_t ZA_TEST_4_2_BITS = 0xE0;
+static constexpr uint8_t ZG_TEST_BITS = 0x1F;
+
+static constexpr uint8_t TEST_A_ADDR = 0x10;
+static constexpr uint8_t XA_TEST_1_0_BITS = 0x30;
+static constexpr uint8_t YA_TEST_1_0_BITS = 0x0C;
+static constexpr uint8_t ZA_TEST_1_0_BITS = 0x02;
+
+static constexpr uint8_t SMPLRT_DIV_ADDR = 0x19;
+
+static constexpr uint8_t CONFIG_ADDR = 0x1A;
+static constexpr uint8_t EXT_SYNC_SET_BITS = 0x38;
+static constexpr uint8_t DLPF_CFG_BITS = 0x7;
+
+static constexpr uint8_t GYRO_CONF_ADDR = 0x1B;
+static constexpr uint8_t X_GYRO_SELF_TEST_BIT = (1 << 7);
+static constexpr uint8_t Y_GYRO_SELF_TEST_BIT = (1 << 6);
+static constexpr uint8_t Z_GYRO_SELF_TEST_BIT = (1 << 5);
+static constexpr uint8_t GYRO_RANGE_BITS = 0x18;
+
+static constexpr uint8_t ACC_CONF_ADDR = 0x1C;
+static constexpr uint8_t X_ACC_SELF_TEST_BIT = (1 << 7);
+static constexpr uint8_t Y_ACC_SELF_TEST_BIT = (1 << 6);
+static constexpr uint8_t Z_ACC_SELF_TEST_BIT = (1 << 5);
+static constexpr uint8_t ACC_SCALE_BITS = 0x18;
+static constexpr uint8_t ACC_DHPF_BITS = 0x7;
+
+static constexpr uint8_t FIFO_EN_ADDR = 0x23;
+static constexpr uint8_t TEMP_FIFO_ENABLE_BIT = (1 << 7);
+static constexpr uint8_t X_GYRO_FIFO_ENABLE_BIT = (1 << 6);
+static constexpr uint8_t Y_GYRO_FIFO_ENABLE_BIT = (1 << 5);
+static constexpr uint8_t Z_GYRO_FIFO_ENABLE_BIT = (1 << 4);
+static constexpr uint8_t ACC_FIFO_ENABLE_BIT = (1 << 3);
+static constexpr uint8_t SLV2_FIFO_ENABLE_BIT = (1 << 2);
+static constexpr uint8_t SLV1_FIFO_ENABLE_BIT = (1 << 1);
+static constexpr uint8_t SLV0_FIFO_ENABLE_BIT = (1 << 0);
+
+static constexpr uint8_t INT_PIN_CFG_ADDR = 0x37;
+/**
+ * @brief When this bit is equal to 0, the logic level for the INT pin is active high. 
+ * When this bit is equal to 1, the logic level for the INT pin is active low. 
+ */
+static constexpr uint8_t INT_LEVEL_BIT = (1 << 7);
+/**
+ * @brief When this bit is equal to 0, the INT pin is configured as push-pull.
+ * When this bit is equal to 1, the INT pin is configured as open drain.
+ */
+static constexpr uint8_t INT_OPEN_BIT = (1 << 6);
+/**
+ * @brief When this bit is equal to 0, the INT pin emits a 50us long pulse.
+ * When this bit is equal to 1, the INT pin is held high until the interrupt is cleared
+ */
+static constexpr uint8_t LATCH_INT_ENABLE_BIT = (1 << 5);
+/**
+ * @brief When this bit is equal to 0, interrupt status bits are cleared only by reading 
+ * INT_STATUS (Register 58).
+ * When this bit is equal to 1, interrupt status bits are cleared on any read operation.
+ */
+static constexpr uint8_t INT_CLEAR_ON_READ_BIT = (1 << 4);
+static constexpr uint8_t FSYNC_INT_LEVEL_BIT = (1 << 3);
+static constexpr uint8_t FSYNC_INT_ENABLE_BIT = (1 << 2);
+static constexpr uint8_t I2C_BYPASS_ENABLE_BIT = (1 << 1);
+
+static constexpr uint8_t INT_ENABLE_ADDR = 0x38;
+static constexpr uint8_t FIFO_OVERFLOW_BIT = (1 << 4);
+static constexpr uint8_t I2C_MASTER_INT_BIT = (1 << 3);
+/**
+ * @brief When set to 1, this bit enables the Data Ready interrupt, which occurs each 
+ * time a write operation to all of the sensor registers has been completed.
+ */
+static constexpr uint8_t DATA_READY_INT_BIT = (1 << 0);
+
+static constexpr uint8_t INT_STATUS_ADDR = 0x3A;
+static constexpr uint8_t FIFO_OVERFLOW_INT_ENABLE_BIT = (1 << 4);
+static constexpr uint8_t I2C_MASTER_INT_ENABLE_BIT = (1 << 3);
+/**
+ * @brief This bit automatically sets to 1 when a Data Ready interrupt is generated. 
+ * The bit clears to 0 after the register has been read.
+ */
+static constexpr uint8_t DATA_READY_INT_ENABLE_BIT = (1 << 0);
+
+static constexpr uint8_t ACC_X_H_ADDR = 0x3B;
+static constexpr uint8_t ACC_X_L_ADDR = 0x3C;
+static constexpr uint8_t ACC_Y_H_ADDR = 0x3D;
+static constexpr uint8_t ACC_Y_L_ADDR = 0x3E;
+static constexpr uint8_t ACC_Z_H_ADDR = 0x3F;
+static constexpr uint8_t ACC_Z_L_ADDR = 0x40;
+
+static constexpr uint8_t TEMP_H_ADDR = 0x41;
+static constexpr uint8_t TEMP_L_ADDR = 0x42;
+
+static constexpr uint8_t GYRO_X_H_ADDR = 0x43;
+static constexpr uint8_t GYRO_X_L_ADDR = 0x44;
+static constexpr uint8_t GYRO_Y_H_ADDR = 0x45;
+static constexpr uint8_t GYRO_Y_L_ADDR = 0x46;
+static constexpr uint8_t GYRO_Z_H_ADDR = 0x47;
+static constexpr uint8_t GYRO_Z_L_ADDR = 0x48;
+
+static constexpr uint8_t SIGNAL_PATH_RESET_ADDR = 0x68;
+static constexpr uint8_t GYRO_RESET_BIT = (1 << 2);
+static constexpr uint8_t ACC_RESET_BIT = (1 << 1);
+static constexpr uint8_t TEMP_RESET_BIT = (1 << 0);
+
+static constexpr uint8_t USER_CTRL_ADDR = 0x6A;
+static constexpr uint8_t FIFO_ENABLED_BIT = (1 << 6);
+static constexpr uint8_t I2C_MASTER_ENABLED_BIT = (1 << 5);
+static constexpr uint8_t I2C_ENABLED_BIT = (1 << 4);
+static constexpr uint8_t FIFO_RESET_BIT = (1 << 2);
+static constexpr uint8_t I2C_MASTER_RESET_BIT = (1 << 1);
+static constexpr uint8_t SIGNAL_COND_RESET_BIT = (1 << 0);
+
+static constexpr uint8_t PWR_MGMT_1_ADDR = 0x6B;
+static constexpr uint8_t RESET_BIT = (1 << 7);
+static constexpr uint8_t SLEEP_BIT = (1 << 6);
+static constexpr uint8_t CYCLE_BIT = (1 << 5);
+static constexpr uint8_t TEMP_DISABLED_BIT = (1 << 3);
+static constexpr uint8_t CLK_SEL_BITS = 0x7;
+
+static constexpr uint8_t PWR_MGMT_2_ADDR = 0x6C;
+static constexpr uint8_t LP_WAKE_CTRL_BITS = 0xC0;
+static constexpr uint8_t STBY_XA_BIT = (1 << 5);
+static constexpr uint8_t STBY_YA_BIT = (1 << 4);
+static constexpr uint8_t STBY_ZA_BIT = (1 << 3);
+static constexpr uint8_t STBY_XG_BIT = (1 << 2);
+static constexpr uint8_t STBY_YG_BIT = (1 << 1);
+static constexpr uint8_t STBY_ZG_BIT = (1 << 0);
+
+static constexpr uint8_t FIFO_COUNT_H_ADDR = 0x72;
+
+static constexpr uint8_t FIFO_COUNT_L_ADDR = 0x73;
+
+static constexpr uint8_t FIFO_DATA_ADDR = 0x74;
+
+static constexpr uint8_t WHO_AM_I_ADDR = 0x75;
+static constexpr uint8_t WHO_AM_I_BITS = 0x7E;
+
+static constexpr uint8_t SELF_TEST_SAMPLES = 20;
+static constexpr uint8_t SELF_TEST_SLEEP = 10;
+static constexpr float SELF_TEST_ACC_THRESHOLD = 0.1;
+static constexpr float SELF_TEST_GYRO_THRESHOLD = 0.1;
 
 inline static float gyroFactoryTrim(uint8_t factory_trim, bool y)
 {
@@ -71,9 +220,9 @@ int MPU6050::read(uint8_t reg, uint8_t *buf, size_t bytes)
 	return 0;
 }
 
-int MPU6050::setAccRange(acc_range_t range)
+int MPU6050::setAccRange(AccRange range)
 {
-	if (range < ACC_RANGE_2G || range > ACC_RANGE_16G) {
+	if (range < AccRange::_2G || range > AccRange::_16G) {
 		log_error("Invalid argument\n");
 		return EINVAL;
 	}
@@ -88,7 +237,7 @@ int MPU6050::setAccRange(acc_range_t range)
 	}
 
 	acc_conf &= 0b11100111; // clear the range bits
-	acc_conf |= range << 3; // set the range bits
+	acc_conf |= static_cast<uint8_t>(range) << 3; // set the range bits
 	uint8_t data[2] = { ACC_CONF_ADDR, acc_conf };
 	ret = i2c_write_blocking(i2c_default, m_address, data, 2, false);
 	if (ret != 2) {
@@ -97,19 +246,19 @@ int MPU6050::setAccRange(acc_range_t range)
 	}
 
 	switch (range) {
-	case ACC_RANGE_2G:
+	case AccRange::_2G:
 		m_acc_scale = 1.0f / (1 << 14);
 		log_debug("Acceleration scale set to 2g: %f\n", m_acc_scale);
 		break;
-	case ACC_RANGE_4G:
+	case AccRange::_4G:
 		m_acc_scale = 1.0f / (1 << 13);
 		log_debug("Acceleration scale set to 4g: %f\n", m_acc_scale);
 		break;
-	case ACC_RANGE_8G:
+	case AccRange::_8G:
 		m_acc_scale = 1.0f / (1 << 12);
 		log_debug("Acceleration scale set to 8g: %f\n", m_acc_scale);
 		break;
-	case ACC_RANGE_16G:
+	case AccRange::_16G:
 		m_acc_scale = 1.0f / (1 << 11);
 		log_debug("Acceleration scale set to 16g: %f\n", m_acc_scale);
 		break;
@@ -120,9 +269,9 @@ int MPU6050::setAccRange(acc_range_t range)
 	return 0;
 }
 
-int MPU6050::setGyroRange(gyro_range_t range)
+int MPU6050::setGyroRange(GyroRange range)
 {
-	if (range < GYRO_RANGE_250 || range > GYRO_RANGE_2000) {
+	if (range < GyroRange::_250 || range > GyroRange::_2000) {
 		log_error("Invalid argument\n");
 		return EINVAL;
 	}
@@ -136,7 +285,7 @@ int MPU6050::setGyroRange(gyro_range_t range)
 	}
 
 	gyro_conf &= 0b11100111; // clear the range bits
-	gyro_conf |= range << 3; // set the range bits
+	gyro_conf |= static_cast<uint8_t>(range) << 3; // set the range bits
 	uint8_t data[2] = { GYRO_CONF_ADDR, gyro_conf };
 	ret = i2c_write_blocking(i2c_default, m_address, data, 2, false);
 	if (ret != 2) {
@@ -145,19 +294,19 @@ int MPU6050::setGyroRange(gyro_range_t range)
 	}
 
 	switch (range) {
-	case GYRO_RANGE_250:
+	case GyroRange::_250:
 		m_gyro_scale = 1.0f / (1 << 14);
 		log_debug("Gyroscope scale set to 250°: %f\n", m_gyro_scale);
 		break;
-	case GYRO_RANGE_500:
+	case GyroRange::_500:
 		m_gyro_scale = 1.0f / (1 << 13);
 		log_debug("Gyroscope scale set to 500°: %f\n", m_gyro_scale);
 		break;
-	case GYRO_RANGE_1000:
+	case GyroRange::_1000:
 		m_gyro_scale = 1.0f / (1 << 12);
 		log_debug("Gyroscope scale set to 1000°: %f\n", m_gyro_scale);
 		break;
-	case GYRO_RANGE_2000:
+	case GyroRange::_2000:
 		m_gyro_scale = 1.0f / (1 << 11);
 		log_debug("Gyroscope scale set to 2000°: %f\n", m_gyro_scale);
 		break;
@@ -424,7 +573,7 @@ int MPU6050::enableAccSelfTest()
 {
 	int ret = 0;
 
-	ret = setAccRange(ACC_RANGE_8G);
+	ret = setAccRange(AccRange::_8G);
 	if (ret != 0) {
 		log_error("Error in setAccRange(). (%s)\n", strerror(ret));
 		return ret;
@@ -479,7 +628,7 @@ int MPU6050::enableGyroSelfTest()
 {
 	int ret = 0;
 
-	ret = setGyroRange(GYRO_RANGE_250);
+	ret = setGyroRange(GyroRange::_250);
 	if (ret != 0) {
 		log_error("Error in setGyroRange(). (%s)\n", strerror(ret));
 		return ret;
@@ -770,7 +919,7 @@ int MPU6050::wake()
 	return 0;
 }
 
-int MPU6050::getDLPFConfig(dlpf_t &cfg)
+int MPU6050::getDLPFConfig(DlpfBW &cfg)
 {
 	uint8_t dlpf_cfg;
 	int ret = read(CONFIG_ADDR, &dlpf_cfg);
@@ -779,12 +928,12 @@ int MPU6050::getDLPFConfig(dlpf_t &cfg)
 		return ret;
 	}
 
-	cfg = static_cast<dlpf_t>(dlpf_cfg & DLPF_CFG_BITS);
+	cfg = static_cast<DlpfBW>(dlpf_cfg & DLPF_CFG_BITS);
 
 	return 0;
 }
 
-int MPU6050::setDLPFConfig(dlpf_t cfg)
+int MPU6050::setDLPFConfig(DlpfBW cfg)
 {
 	int ret = 0;
 	uint8_t dlpf_cfg;
@@ -795,7 +944,7 @@ int MPU6050::setDLPFConfig(dlpf_t cfg)
 	}
 
 	dlpf_cfg &= ~DLPF_CFG_BITS; // clear the dlpf bits
-	dlpf_cfg |= cfg; // set the dlpf bits
+	dlpf_cfg |= static_cast<uint8_t>(cfg); // set the dlpf bits
 	uint8_t buf2[] = { CONFIG_ADDR, dlpf_cfg };
 	ret = i2c_write_blocking(i2c_default, m_address, buf2, 2, false);
 	if (ret != 2) {
@@ -807,6 +956,5 @@ int MPU6050::setDLPFConfig(dlpf_t cfg)
 	return 0;
 }
 
-} // MPU6050
 } // namespace sensors
 } // namespace arc

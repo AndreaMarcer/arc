@@ -43,9 +43,10 @@ int main()
 	gpio_set_irq_enabled_with_callback(9, GPIO_IRQ_EDGE_RISE, true,
 					   &gpio_callback);
 
-	MPU6050::MPU6050 mpu6050{ 0x68 };
-	mpu6050.setDLPFConfig(MPU6050::DLPF_184HZ);
+	MPU6050 mpu6050{ 0x68 };
+	mpu6050.setDLPFConfig(MPU6050::DlpfBW::_184Hz);
 	mpu6050.enableInterrupt();
+	mpu6050.setAccRange(MPU6050::AccRange::_16G);
 	mpu6050.wake();
 
 	sleep_ms(100);
