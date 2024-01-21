@@ -27,7 +27,16 @@ namespace common {
 constexpr float DEG2RAD = M_PI / 180.0f;
 constexpr float RAD2DEG = 180.0f / M_PI;
 
-inline float modf(float vec[3])
+typedef union {
+	float vec[3];
+	struct {
+		float x;
+		float y;
+		float z;
+	};
+} acc_t;
+
+constexpr float modf(float vec[3])
 {
 	return hypot(hypotf(vec[0], vec[1]), vec[2]);
 }
