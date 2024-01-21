@@ -14,6 +14,11 @@
 #include "pico/stdlib.h"
 #include "hardware/i2c.h"
 
+#define MPU6050_SELF_TEST_SAMPLES 20
+#define MPU6050_SELF_TEST_SLEEP 10
+#define MPU6050_SELF_TEST_ACC_THR 0.1
+#define MPU6050_SELF_TEST_GYRO_THR 0.1
+
 namespace arc {
 namespace sensors {
 

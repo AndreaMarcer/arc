@@ -164,10 +164,10 @@ static constexpr uint8_t FIFO_DATA_ADDR = 0x74;
 static constexpr uint8_t WHO_AM_I_ADDR = 0x75;
 static constexpr uint8_t WHO_AM_I_BITS = 0x7E;
 
-static constexpr uint8_t SELF_TEST_SAMPLES = 20;
-static constexpr uint8_t SELF_TEST_SLEEP = 10;
-static constexpr float SELF_TEST_ACC_THRESHOLD = 0.1;
-static constexpr float SELF_TEST_GYRO_THRESHOLD = 0.1;
+static constexpr uint8_t SELF_TEST_SAMPLES = MPU6050_SELF_TEST_SAMPLES;
+static constexpr uint8_t SELF_TEST_SLEEP = MPU6050_SELF_TEST_SLEEP;
+static constexpr float SELF_TEST_ACC_THR = MPU6050_SELF_TEST_ACC_THR;
+static constexpr float SELF_TEST_GYRO_THR = MPU6050_SELF_TEST_GYRO_THR;
 
 inline static float gyroFactoryTrim(uint8_t factory_trim, bool y)
 {
@@ -460,9 +460,9 @@ int MPU6050::accSelfTest()
 			FT[i];
 	}
 
-	if (abs(m_acc_self_test[0]) < SELF_TEST_ACC_THRESHOLD &&
-	    abs(m_acc_self_test[1]) < SELF_TEST_ACC_THRESHOLD &&
-	    abs(m_acc_self_test[2]) < SELF_TEST_ACC_THRESHOLD) {
+	if (abs(m_acc_self_test[0]) < SELF_TEST_ACC_THR &&
+	    abs(m_acc_self_test[1]) < SELF_TEST_ACC_THR &&
+	    abs(m_acc_self_test[2]) < SELF_TEST_ACC_THR) {
 		log_info("   - [%0.3f, %0.3f, %0.3f] => PASSED\n",
 			 m_acc_self_test[0], m_acc_self_test[1],
 			 m_acc_self_test[2]);
@@ -551,9 +551,9 @@ int MPU6050::gyroSelfTest()
 			FT[i];
 	}
 
-	if (abs(m_gyro_self_test[0]) < SELF_TEST_GYRO_THRESHOLD &&
-	    abs(m_gyro_self_test[1]) < SELF_TEST_GYRO_THRESHOLD &&
-	    abs(m_gyro_self_test[2]) < SELF_TEST_GYRO_THRESHOLD) {
+	if (abs(m_gyro_self_test[0]) < SELF_TEST_GYRO_THR &&
+	    abs(m_gyro_self_test[1]) < SELF_TEST_GYRO_THR &&
+	    abs(m_gyro_self_test[2]) < SELF_TEST_GYRO_THR) {
 		log_info("   - [%0.3f, %0.3f, %0.3f] => PASSED\n",
 			 m_gyro_self_test[0], m_gyro_self_test[1],
 			 m_gyro_self_test[2]);
