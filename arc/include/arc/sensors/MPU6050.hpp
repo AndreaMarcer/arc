@@ -12,8 +12,7 @@
 #pragma once
 
 #include "pico/stdlib.h"
-#include "common/constants.hpp"
-#include "common/common.hpp"
+#include "hardware/i2c.h"
 
 namespace arc {
 namespace sensors {
@@ -71,8 +70,10 @@ class MPU6050 {
 		_40_Hz = 3,
 	};
 
-	//TODO: pass i2c instance to constructor
-	MPU6050(uint8_t address);
+	static constexpr uint8_t I2C_ADDR_AD0_LOW = 0x68;
+	static constexpr uint8_t I2C_ADDR_AD0_HIGH = 0x69;
+
+	MPU6050(i2c_inst_t *i2c_inst, uint8_t address);
 
 	int read(uint8_t reg, uint8_t *buf, size_t bytes = 1);
 
@@ -110,20 +111,25 @@ class MPU6050 {
 	int wake();
 
     private:
-	bool m_gyro_in_rad{ false };
-	uint8_t m_address{ 0 };
-	float m_acc_scale{ 1.0 };
-	float m_gyro_scale{ 1.0 };
-	bool m_temp_enabled{ false };
-	uint8_t m_clk_sel{ 0 };
-	bool m_FIFO_enabled{ false };
+	i2c_inst_t *m_i2c_inst{ nullptr };
+	uint8_t m_addr{ 0 };
 	bool m_I2C_master_mode{ false };
 	bool m_I2C_enabled{ false };
+
 	uint8_t m_acc_scale_index{ 0 };
-	uint8_t m_gyro_scale_index{ 0 };
-	uint8_t m_DLPF_conf{ 0 };
+	float m_acc_scale{ 1.0 };
 	float m_acc_self_test[3];
+
+	uint8_t m_DLPF_conf{ 0 };
+	uint8_t m_gyro_scale_index{ 0 };
+	float m_gyro_scale{ 1.0 };
+	bool m_gyro_in_rad{ false };
 	float m_gyro_self_test[3];
+
+	bool m_temp_enabled{ false };
+
+	uint8_t m_clk_sel{ 0 };
+	bool m_FIFO_enabled{ false };
 	bool m_self_test_fail{ false };
 };
 

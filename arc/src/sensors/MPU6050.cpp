@@ -12,7 +12,6 @@
 #include <stdio.h>
 #include "math.h"
 #include "sensors/MPU6050.hpp"
-#include "hardware/i2c.h"
 #include "common/common.hpp"
 #include "common/log.hpp"
 #include <errno.h>
@@ -186,8 +185,9 @@ inline static float accFactoryTrim(uint8_t factory_trim)
 	return 4096.0f * 0.34f * powf(0.92f / 0.34f, exp);
 }
 
-MPU6050::MPU6050(uint8_t address)
-	: m_address{ address }
+MPU6050::MPU6050(i2c_inst_t *i2c_inst, uint8_t address)
+	: m_i2c_inst{ i2c_inst }
+	, m_addr{ address }
 {
 	reset();
 	reset_paths();
@@ -205,13 +205,13 @@ int MPU6050::read(uint8_t reg, uint8_t *buf, size_t bytes)
 		return EINVAL;
 	}
 
-	ret = i2c_write_blocking(i2c_default, m_address, &reg, 1, true);
+	ret = i2c_write_blocking(m_i2c_inst, m_addr, &reg, 1, true);
 	if (ret != 1) {
 		log_error("Error in i2c_write_blocking()\n");
 		return EIO;
 	}
 
-	ret = i2c_read_blocking(i2c_default, m_address, buf, bytes, false);
+	ret = i2c_read_blocking(m_i2c_inst, m_addr, buf, bytes, false);
 	if (ret != static_cast<int>(bytes)) {
 		log_error("Error in i2c_write_blocking()\n");
 		return EIO;
@@ -239,7 +239,7 @@ int MPU6050::setAccRange(AccRange range)
 	acc_conf &= 0b11100111; // clear the range bits
 	acc_conf |= static_cast<uint8_t>(range) << 3; // set the range bits
 	uint8_t data[2] = { ACC_CONF_ADDR, acc_conf };
-	ret = i2c_write_blocking(i2c_default, m_address, data, 2, false);
+	ret = i2c_write_blocking(m_i2c_inst, m_addr, data, 2, false);
 	if (ret != 2) {
 		log_error("Error in i2c_write_blocking()\n");
 		return EIO;
@@ -287,7 +287,7 @@ int MPU6050::setGyroRange(GyroRange range)
 	gyro_conf &= 0b11100111; // clear the range bits
 	gyro_conf |= static_cast<uint8_t>(range) << 3; // set the range bits
 	uint8_t data[2] = { GYRO_CONF_ADDR, gyro_conf };
-	ret = i2c_write_blocking(i2c_default, m_address, data, 2, false);
+	ret = i2c_write_blocking(m_i2c_inst, m_addr, data, 2, false);
 	if (ret != 2) {
 		log_error("Error in i2c_write_blocking()\n");
 		return EIO;
@@ -590,7 +590,7 @@ int MPU6050::enableAccSelfTest()
 	buf |= Y_ACC_SELF_TEST_BIT;
 	buf |= Z_ACC_SELF_TEST_BIT;
 	uint8_t data[2] = { ACC_CONF_ADDR, buf };
-	ret = i2c_write_blocking(i2c_default, m_address, data, 2, false);
+	ret = i2c_write_blocking(m_i2c_inst, m_addr, data, 2, false);
 	if (ret != 2) {
 		log_error("Error in i2c_write_blocking()\n");
 		return EIO;
@@ -613,7 +613,7 @@ int MPU6050::disableAccSelfTest()
 
 	buf &= 0b00011111; // reset self test bits
 	uint8_t data[2] = { ACC_CONF_ADDR, buf };
-	ret = i2c_write_blocking(i2c_default, m_address, data, 2, false);
+	ret = i2c_write_blocking(m_i2c_inst, m_addr, data, 2, false);
 	if (ret != 2) {
 		log_error("Error in i2c_write_blocking()\n");
 		return EIO;
@@ -645,7 +645,7 @@ int MPU6050::enableGyroSelfTest()
 	buf |= Y_GYRO_SELF_TEST_BIT;
 	buf |= Z_GYRO_SELF_TEST_BIT;
 	uint8_t data[2] = { GYRO_CONF_ADDR, buf };
-	ret = i2c_write_blocking(i2c_default, m_address, data, 2, false);
+	ret = i2c_write_blocking(m_i2c_inst, m_addr, data, 2, false);
 	if (ret != 2) {
 		log_error("Error in i2c_write_blocking()\n");
 		return EIO;
@@ -668,7 +668,7 @@ int MPU6050::disableGyroSelfTest()
 
 	buf &= 0b00011111; // reset self test bits
 	uint8_t data[2] = { GYRO_CONF_ADDR, buf };
-	ret = i2c_write_blocking(i2c_default, m_address, data, 2, false);
+	ret = i2c_write_blocking(m_i2c_inst, m_addr, data, 2, false);
 	if (ret != 2) {
 		log_error("Error in i2c_write_blocking()\n");
 		return EIO;
@@ -809,7 +809,7 @@ int MPU6050::enableInterrupt()
 	int ret;
 
 	uint8_t buf[] = { INT_PIN_CFG_ADDR, LATCH_INT_ENABLE_BIT };
-	ret = i2c_write_blocking(i2c_default, m_address, buf, 2, false);
+	ret = i2c_write_blocking(m_i2c_inst, m_addr, buf, 2, false);
 	if (ret != 2) {
 		log_error("Error in i2c_write_blocking()\n");
 		return EIO;
@@ -817,7 +817,7 @@ int MPU6050::enableInterrupt()
 	sleep_ms(10);
 
 	uint8_t buf2[] = { INT_ENABLE_ADDR, DATA_READY_INT_BIT };
-	ret = i2c_write_blocking(i2c_default, m_address, buf2, 2, false);
+	ret = i2c_write_blocking(m_i2c_inst, m_addr, buf2, 2, false);
 	if (ret != 2) {
 		log_error("Error in i2c_write_blocking()\n");
 		return EIO;
@@ -851,7 +851,7 @@ int MPU6050::reset()
 
 	uint8_t reset_mask = pwr_mgmt | RESET_BIT;
 	uint8_t buf[] = { PWR_MGMT_1_ADDR, reset_mask };
-	ret = i2c_write_blocking(i2c_default, m_address, buf, 2, false);
+	ret = i2c_write_blocking(m_i2c_inst, m_addr, buf, 2, false);
 	if (ret != 2) {
 		log_error("Error in i2c_write_blocking()\n");
 		return EIO;
@@ -865,7 +865,7 @@ int MPU6050::reset_paths()
 {
 	uint8_t reset_mask = GYRO_RESET_BIT | ACC_RESET_BIT | TEMP_RESET_BIT;
 	uint8_t buf[] = { SIGNAL_PATH_RESET_ADDR, reset_mask };
-	int ret = i2c_write_blocking(i2c_default, m_address, buf, 2, false);
+	int ret = i2c_write_blocking(m_i2c_inst, m_addr, buf, 2, false);
 	if (ret != 2) {
 		log_error("Error in i2c_write_blocking()\n");
 		return EIO;
@@ -887,7 +887,7 @@ int MPU6050::sleep()
 
 	uint8_t sleep_mask = pwr_mgmt & SLEEP_BIT;
 	uint8_t buf2[] = { PWR_MGMT_1_ADDR, sleep_mask };
-	ret = i2c_write_blocking(i2c_default, m_address, buf2, 2, false);
+	ret = i2c_write_blocking(m_i2c_inst, m_addr, buf2, 2, false);
 	if (ret != 2) {
 		log_error("Error in i2c_write_blocking()\n");
 		return EIO;
@@ -909,7 +909,7 @@ int MPU6050::wake()
 
 	uint8_t wake_mask = pwr_mgmt & ~SLEEP_BIT;
 	uint8_t buf2[] = { PWR_MGMT_1_ADDR, wake_mask };
-	ret = i2c_write_blocking(i2c_default, m_address, buf2, 2, false);
+	ret = i2c_write_blocking(m_i2c_inst, m_addr, buf2, 2, false);
 	if (ret != 2) {
 		log_error("Error in i2c_write_blocking()\n");
 		return EIO;
@@ -946,7 +946,7 @@ int MPU6050::setDLPFConfig(DlpfBW cfg)
 	dlpf_cfg &= ~DLPF_CFG_BITS; // clear the dlpf bits
 	dlpf_cfg |= static_cast<uint8_t>(cfg); // set the dlpf bits
 	uint8_t buf2[] = { CONFIG_ADDR, dlpf_cfg };
-	ret = i2c_write_blocking(i2c_default, m_address, buf2, 2, false);
+	ret = i2c_write_blocking(m_i2c_inst, m_addr, buf2, 2, false);
 	if (ret != 2) {
 		log_error("Error in i2c_write_blocking()\n");
 		return EIO;
