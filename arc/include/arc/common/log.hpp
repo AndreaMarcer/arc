@@ -15,13 +15,14 @@
 #include <string.h>
 
 #define LOG_ERROR 1
+#define LOG_CRIT 1
 #define LOG_WARNING 2
 #define LOG_INFO 3
 
 #ifdef LOG_COLOR
 #define LOG_NONE "\e[0m"
-#define LOG_PURPLE "\e[0;35m"
-#define LOG_RED "\e[0;31m"
+#define LOG_PURPLE "\e[1;35m"
+#define LOG_RED "\e[1;31m"
 #define LOG_YELLOW "\e[1;33m"
 #define LOG_BOLD "\e[1m"
 #else
@@ -35,10 +36,9 @@
 #define FILENAME(x) strstr(x, "/arc") + 5
 
 #ifdef LOG_DEBUG
-#define log_debug(M, ...)                                          \
-	MULTILINE_DEFINE_BEGINE                                    \
-	fprintf(stdout, LOG_BOLD LOG_PURPLE "[DEBUG] " LOG_NONE M, \
-		##__VA_ARGS__);                                    \
+#define log_debug(M, ...)                                                 \
+	MULTILINE_DEFINE_BEGINE                                           \
+	fprintf(stdout, LOG_PURPLE "[DEBUG] " LOG_NONE M, ##__VA_ARGS__); \
 	MULTILINE_DEFINE_END
 #define log_debug_s(M, ...)                \
 	MULTILINE_DEFINE_BEGINE            \
@@ -51,19 +51,26 @@
 #if LOG_LEVEL >= LOG_ERROR
 #define log_error(M, ...)                                               \
 	MULTILINE_DEFINE_BEGINE                                         \
-	fprintf(stdout,                                                 \
-		LOG_BOLD LOG_RED "[ERROR] {./%s:%d} %s(): " LOG_NONE M, \
+	fprintf(stdout, LOG_RED "[ERROR] {./%s:%d} %s(): " LOG_NONE M,  \
 		FILENAME(__FILE__), __LINE__, __func__, ##__VA_ARGS__); \
 	MULTILINE_DEFINE_END
 #else
 #define log_error(m, ...)
 #endif
 
+#if LOG_LEVEL >= LOG_CRIT
+#define log_critical(M, ...)                                           \
+	MULTILINE_DEFINE_BEGINE                                        \
+	fprintf(stdout, LOG_RED "[CRIT ] " LOG_NONE M, ##__VA_ARGS__); \
+	MULTILINE_DEFINE_END
+#else
+#define log_critical(m, ...)
+#endif
+
 #if LOG_LEVEL >= LOG_WARNING
-#define log_warning(M, ...)                                        \
-	MULTILINE_DEFINE_BEGINE                                    \
-	fprintf(stdout, LOG_BOLD LOG_YELLOW "[WARN ] " LOG_NONE M, \
-		##__VA_ARGS__);                                    \
+#define log_warning(M, ...)                                               \
+	MULTILINE_DEFINE_BEGINE                                           \
+	fprintf(stdout, LOG_YELLOW "[WARN ] " LOG_NONE M, ##__VA_ARGS__); \
 	MULTILINE_DEFINE_END
 #else
 #define log_warning(m, ...)

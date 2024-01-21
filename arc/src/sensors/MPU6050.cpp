@@ -402,14 +402,21 @@ int MPU6050::selfTest()
 		log_error("Error in accSelfTest(). (%s)\n", strerror(ret));
 		return ret;
 	}
+	if (m_self_test_fail) {
+		log_critical("Accelerometer Self Test failed\n");
+		return 0;
+	}
 
 	ret = gyroSelfTest();
 	if (ret != 0) {
 		log_error("Error in gyroSelfTest(). (%s)\n", strerror(ret));
 		return ret;
 	}
+	if (m_self_test_fail) {
+		log_critical("Accelerometer Self Test failed\n");
+	}
 
-	return m_self_test_fail;
+	return 0;
 }
 
 int MPU6050::accSelfTest()
@@ -501,8 +508,9 @@ int MPU6050::accSelfTest()
 		return 0;
 	}
 
-	log_warning("   - [%0.3f, %0.3f, %0.3f] => FAILED\n",
-		    m_acc_self_test[0], m_acc_self_test[1], m_acc_self_test[2]);
+	log_critical("   - [%0.3f, %0.3f, %0.3f] => FAILED\n",
+		     m_acc_self_test[0], m_acc_self_test[1],
+		     m_acc_self_test[2]);
 
 FAIL:
 	m_self_test_fail = true;
@@ -592,9 +600,9 @@ int MPU6050::gyroSelfTest()
 		return 0;
 	}
 
-	log_warning("   - [%0.3f, %0.3f, %0.3f] => FAILED\n",
-		    m_gyro_self_test[0], m_gyro_self_test[1],
-		    m_gyro_self_test[2]);
+	log_critical("   - [%0.3f, %0.3f, %0.3f] => FAILED\n",
+		     m_gyro_self_test[0], m_gyro_self_test[1],
+		     m_gyro_self_test[2]);
 
 FAIL:
 	m_self_test_fail = true;
@@ -1056,9 +1064,9 @@ int MPU6050::calibrateGyro()
 	log_debug("Gyro STD Threshold: %llu\n", gyro_std_thr);
 	for (uint8_t j = 0; j < 3; j++) {
 		if (gyro_std[j] > gyro_std_thr) {
-			log_warning(
+			log_critical(
 				"Gyroscope calibration FAILED. STD too high\n");
-			return EFAULT;
+			return 0;
 		}
 	}
 
