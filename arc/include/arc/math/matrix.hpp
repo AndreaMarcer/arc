@@ -53,6 +53,8 @@ class Matrix {
 	void fill(const T &);
 
     private:
+	void print(const char[]);
+
 	T *m_matrix = new T[ROWS * COLS];
 };
 
@@ -218,38 +220,29 @@ Matrix<T, L_ROWS, R_COLS> operator*(Matrix<T, L_ROWS, L_COLS_R_ROWS> l_m,
 }
 
 template <typename T, uint8_t ROWS, uint8_t COLS>
+void Matrix<T, ROWS, COLS>::print(const char fmt[])
+{
+	for (uint8_t i = 0; i < ROWS; i++) {
+		log_debug("");
+		for (uint8_t j = 0; j < COLS; j++) {
+			log_debug_s(fmt, m_matrix[i * COLS + j]);
+		}
+		log_debug_s("\n");
+	}
+}
+
+template <typename T, uint8_t ROWS, uint8_t COLS>
 void Matrix<T, ROWS, COLS>::print()
 {
 	if constexpr (std::is_integral_v<T>) {
 		if constexpr (std::is_unsigned_v<T>) {
-			for (uint8_t i = 0; i < ROWS; i++) {
-				log_debug("");
-				for (uint8_t j = 0; j < COLS; j++) {
-					log_debug_s("%u, ",
-						    m_matrix[i * COLS + j]);
-				}
-				log_debug_s("\n");
-			}
+			print("%u, ");
 		} else {
-			for (uint8_t i = 0; i < ROWS; i++) {
-				log_debug("");
-				for (uint8_t j = 0; j < COLS; j++) {
-					log_debug_s("%d, ",
-						    m_matrix[i * COLS + j]);
-				}
-				log_debug_s("\n");
-			}
+			print("%d, ");
 		}
 	} else {
 		if (std::is_floating_point_v<T>) {
-			for (uint8_t i = 0; i < ROWS; i++) {
-				log_debug("");
-				for (uint8_t j = 0; j < COLS; j++) {
-					log_debug_s("%f, ",
-						    m_matrix[i * COLS + j]);
-				}
-				log_debug_s("\n");
-			}
+			print("%f, ");
 		} else {
 			return;
 		}
