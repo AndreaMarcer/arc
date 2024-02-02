@@ -52,66 +52,6 @@ int main()
 
 	log_info("=======================\n");
 
-	arc::math::Matrix<int, 2, 3> m1 = arc::math::Matrix<int, 2, 3>();
-	m1.print();
-	m1.clear();
-	m1.print();
-
-	arc::math::Matrix<uint, 3, 2> m2;
-	m2.print();
-
-	float arr[1][2] = { { 1, 2 } };
-	arc::math::Matrix m3(arr);
-	m3.print();
-
-	arc::math::Matrix<int, 2, 3> m4;
-	m4.clear();
-	m4.print();
-
-	arc::math::Matrix<int, 2, 3> m12{ { 1, 2, 3 }, { 2, 5, 6 } };
-	m12.print();
-
-	m4[1][1] = 5;
-
-	arc::math::Matrix m5(m4);
-	m5.print();
-
-	arc::math::Matrix m6 = m4 * m5;
-	m6.print();
-
-	arc::math::Matrix m7 = m6 * 2;
-	m7.print();
-
-	int num = 2;
-	arc::math::Matrix m8 = m6 * num;
-	m8.print();
-
-	m7 = m8 * 2;
-	m7.print();
-
-	arc::math::Matrix<int, 2, 3> m9(1);
-	m9.print();
-
-	arc::math::Matrix<int, 3, 2> m10(3);
-	m10.print();
-
-	arc::math::Matrix m11 = m9 * m10;
-	m11.print();
-
-	// arc::common::Vector<int, 3> v1 = { 2 };
-	// arc::common::Vector<int, 3> v2 = { 1 };
-	// arc::common::Vector<int, 3> v3;
-
-	// print(v1);
-	// print(v2);
-	// print(v3);
-
-	// if (v1 == v2) {
-	// 	printf("EQUAL\n");
-	// }
-	// v3 = v1 + v2;
-	// print(v3);
-
 	// MPU6050 mpu6050{ i2c_default, MPU6050::I2C_ADDR_AD0_LOW };
 	// mpu6050.setDLPFConfig(MPU6050::DlpfBW::_184Hz);
 	// mpu6050.setAccRange(MPU6050::AccRange::_2G);

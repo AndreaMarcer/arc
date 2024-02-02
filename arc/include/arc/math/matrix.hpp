@@ -35,25 +35,27 @@ class Matrix {
 
 	~Matrix();
 
-	void print();
+	constexpr T *operator[](uint8_t n) const { return m_matrix + n * COLS; }
+	Matrix operator*(const T &) const;
+	Matrix operator*(const T &&) const;
 
-	constexpr T *operator[](uint8_t n)
-	{
-		return m_matrix + n * COLS;
-	}
+	Matrix operator+(const Matrix &) const;
+	Matrix operator-(const Matrix &) const;
 
-	Matrix operator*(Matrix &);
-	Matrix operator*(T &&);
-	Matrix operator*(T &);
+	constexpr Matrix &operator+=(const Matrix &);
+	constexpr Matrix &operator-=(const Matrix &);
+	constexpr Matrix &operator*=(const T &);
+	constexpr Matrix &operator*=(const T &&);
 
 	constexpr Matrix &operator=(const Matrix &);
 	constexpr Matrix &operator=(Matrix &&);
 
-	void clear();
-	void fill(const T &);
+	constexpr Matrix &clear();
+	constexpr Matrix &fill(const T &);
+	void print() const;
 
     private:
-	void print(const char[]);
+	void print(const char[]) const;
 
 	T *m_matrix = new T[ROWS * COLS];
 };
@@ -61,102 +63,117 @@ class Matrix {
 template <typename T, uint8_t ROWS, uint8_t COLS>
 Matrix<T, ROWS, COLS>::Matrix() // Default
 {
-	log_info("MATRIX Default\n");
+	log_info("MATRIX Default Constructor\n");
 }
 
 template <typename T, uint8_t ROWS, uint8_t COLS>
 Matrix<T, ROWS, COLS>::Matrix(const T &v) // Default
 {
-	log_info("MATRIX Default with value\n");
+	log_info("MATRIX Default Constructor with fill value\n");
 	fill(v);
 }
 
 template <typename T, uint8_t ROWS, uint8_t COLS>
-Matrix<T, ROWS, COLS>::Matrix(const Matrix &other) // copy
+Matrix<T, ROWS, COLS>::Matrix(const T (&matrix)[ROWS][COLS]) // Default
 {
-	log_info("MATRIX copy\n");
-	memcpy(m_matrix, other.m_matrix, COLS * ROWS * sizeof(T));
-}
-
-template <typename T, uint8_t ROWS, uint8_t COLS>
-Matrix<T, ROWS, COLS>::Matrix(Matrix &&other)
-	: m_matrix{ other.m_matrix } // move
-{
-	log_info("MATRIX move\n");
-	other.m_matrix = nullptr;
+	log_info("MATRIX Constructor bidimensional array\n");
+	for (uint8_t r = 0; r < ROWS; r++) {
+		for (uint8_t c = 0; c < COLS; c++) {
+			m_matrix[r * COLS + c] = matrix[r][c];
+		}
+	}
 }
 
 template <typename T, uint8_t ROWS, uint8_t COLS>
 Matrix<T, ROWS, COLS>::Matrix(
 	const std::initializer_list<std::initializer_list<T> > &matrix)
 {
-	log_info("MATRIX initializer_list\n");
+	log_info("MATRIX Constructor initializer_list\n");
 
 	auto it_r = matrix.begin();
-	for (uint8_t i = 0; i < ROWS && it_r != matrix.end(); ++i, ++it_r) {
+	for (uint8_t r = 0; r < ROWS && it_r != matrix.end(); ++r, ++it_r) {
 		auto it_c = it_r->begin();
-		for (uint8_t j = 0; j < COLS && it_c != it_r->end();
-		     ++j, ++it_c) {
-			m_matrix[i * COLS + j] = *it_c;
+		for (uint8_t c = 0; c < COLS && it_c != it_r->end();
+		     ++c, ++it_c) {
+			m_matrix[r * COLS + c] = *it_c;
 		}
 	}
 }
 
 template <typename T, uint8_t ROWS, uint8_t COLS>
-Matrix<T, ROWS, COLS>::Matrix(const T (&matrix)[ROWS][COLS]) // Default
+Matrix<T, ROWS, COLS>::Matrix(const Matrix &other) // Copy
 {
-	log_info("MATRIX bidimensional array\n");
-	for (uint8_t i = 0; i < ROWS; i++) {
-		for (uint8_t j = 0; j < COLS; j++) {
-			m_matrix[i * COLS + j] = matrix[i][j];
-		}
-	}
+	log_info("MATRIX Constructor COPY\n");
+	memcpy(m_matrix, other.m_matrix, COLS * ROWS * sizeof(T));
+}
+
+template <typename T, uint8_t ROWS, uint8_t COLS>
+Matrix<T, ROWS, COLS>::Matrix(Matrix &&other) // Move
+{
+	log_info("MATRIX Constructor MOVE\n");
+	delete[] m_matrix;
+	m_matrix = other.m_matrix;
+	other.m_matrix = nullptr;
 }
 
 template <typename T, uint8_t ROWS, uint8_t COLS>
 Matrix<T, ROWS, COLS>::~Matrix()
 {
-	log_info("MATRIX Default Destructor\n");
+	log_info("MATRIX Destructor\n");
 	delete[] m_matrix;
 }
 
 template <typename T, uint8_t ROWS, uint8_t COLS>
-Matrix<T, ROWS, COLS> Matrix<T, ROWS, COLS>::operator*(Matrix &r_m)
+Matrix<T, ROWS, COLS> Matrix<T, ROWS, COLS>::operator*(const T &s) const
 {
-	log_info("MATRIX moltiplication by matrix\n");
+	log_info("MATRIX MOLT &matrix x &scalar\n");
 
 	Matrix m;
-	for (uint8_t i = 0; i < ROWS; i++) {
-		for (uint8_t j = 0; j < COLS; j++) {
-			m[i][j] = m_matrix[i * COLS + j] * r_m[i][j];
+	for (uint8_t r = 0; r < ROWS; r++) {
+		for (uint8_t c = 0; c < COLS; c++) {
+			m[r][c] = m_matrix[r * COLS + c] * s;
 		}
 	}
 	return m;
 }
 
 template <typename T, uint8_t ROWS, uint8_t COLS>
-Matrix<T, ROWS, COLS> Matrix<T, ROWS, COLS>::operator*(T &&s)
+Matrix<T, ROWS, COLS> Matrix<T, ROWS, COLS>::operator*(const T &&s) const
 {
-	log_info("MATRIX moltiplication by r_value scalar\n");
+	log_info("MATRIX MOLT matrix x &&scalar\n");
 
 	Matrix m;
-	for (uint8_t i = 0; i < ROWS; i++) {
-		for (uint8_t j = 0; j < COLS; j++) {
-			m[i][j] = m_matrix[i * COLS + j] * s;
+	for (uint8_t r = 0; r < ROWS; r++) {
+		for (uint8_t c = 0; c < COLS; c++) {
+			m[r][c] = m_matrix[r * COLS + c] * s;
 		}
 	}
 	return m;
 }
 
 template <typename T, uint8_t ROWS, uint8_t COLS>
-Matrix<T, ROWS, COLS> Matrix<T, ROWS, COLS>::operator*(T &s)
+Matrix<T, ROWS, COLS> Matrix<T, ROWS, COLS>::operator+(const Matrix &r_m) const
 {
-	log_info("MATRIX moltiplication by reference scalar\n");
+	log_info("MATRIX ADD &matrix + &matrix\n");
 
 	Matrix m;
-	for (uint8_t i = 0; i < ROWS; i++) {
-		for (uint8_t j = 0; j < COLS; j++) {
-			m[i][j] = m_matrix[i * COLS + j] * s;
+	for (uint8_t r = 0; r < ROWS; r++) {
+		for (uint8_t c = 0; c < COLS; c++) {
+			m[r][c] = m_matrix[r * COLS + c] + r_m[r][c];
+		}
+	}
+	return m;
+}
+
+template <typename T, uint8_t ROWS, uint8_t COLS>
+Matrix<T, ROWS, COLS> Matrix<T, ROWS, COLS>::operator-(const Matrix &r_m) const
+{
+	log_info("MATRIX SUB &matrix - &matrix\n");
+
+	Matrix m;
+	for (uint8_t r = 0; r < ROWS; r++) {
+		for (uint8_t c = 0; c < COLS; c++) {
+			m[r][c] = m_matrix[r * COLS + c] - r_m[r][c];
 		}
 	}
 	return m;
@@ -164,11 +181,65 @@ Matrix<T, ROWS, COLS> Matrix<T, ROWS, COLS>::operator*(T &s)
 
 template <typename T, uint8_t ROWS, uint8_t COLS>
 constexpr Matrix<T, ROWS, COLS> &
-Matrix<T, ROWS, COLS>::operator=(const Matrix<T, ROWS, COLS> &matrix)
+Matrix<T, ROWS, COLS>::operator+=(const Matrix &r_m)
 {
-	log_info("MATRIX assign reference\n");
-	if (this != &matrix) {
-		memcpy(m_matrix, &matrix, COLS * ROWS * sizeof(T));
+	log_info("MATRIX ADD this += &matrix\n");
+
+	for (uint8_t r = 0; r < ROWS; r++) {
+		for (uint8_t c = 0; c < COLS; c++) {
+			m_matrix[r * COLS + c] += r_m[r][c];
+		}
+	}
+	return *this;
+}
+
+template <typename T, uint8_t ROWS, uint8_t COLS>
+constexpr Matrix<T, ROWS, COLS> &
+Matrix<T, ROWS, COLS>::operator-=(const Matrix &r_m)
+{
+	log_info("MATRIX SUB this -= &matrix\n");
+
+	for (uint8_t r = 0; r < ROWS; r++) {
+		for (uint8_t c = 0; c < COLS; c++) {
+			m_matrix[r * COLS + c] -= r_m[r][c];
+		}
+	}
+	return *this;
+}
+
+template <typename T, uint8_t ROWS, uint8_t COLS>
+constexpr Matrix<T, ROWS, COLS> &Matrix<T, ROWS, COLS>::operator*=(const T &s)
+{
+	log_info("MATRIX Molt this *= &scalar\n");
+
+	for (uint8_t r = 0; r < ROWS; r++) {
+		for (uint8_t c = 0; c < COLS; c++) {
+			m_matrix[r * COLS + c] *= s;
+		}
+	}
+	return *this;
+}
+
+template <typename T, uint8_t ROWS, uint8_t COLS>
+constexpr Matrix<T, ROWS, COLS> &Matrix<T, ROWS, COLS>::operator*=(const T &&s)
+{
+	log_info("MATRIX Molt this *= &&scalar\n");
+
+	for (uint8_t r = 0; r < ROWS; r++) {
+		for (uint8_t c = 0; c < COLS; c++) {
+			m_matrix[r * COLS + c] *= s;
+		}
+	}
+	return *this;
+}
+
+template <typename T, uint8_t ROWS, uint8_t COLS>
+constexpr Matrix<T, ROWS, COLS> &
+Matrix<T, ROWS, COLS>::operator=(const Matrix<T, ROWS, COLS> &other)
+{
+	log_info("MATRIX ASSIGN reference => copy\n");
+	if (this != &other) {
+		memcpy(m_matrix, &other, COLS * ROWS * sizeof(T));
 	}
 	return *this;
 }
@@ -177,62 +248,33 @@ template <typename T, uint8_t ROWS, uint8_t COLS>
 constexpr Matrix<T, ROWS, COLS> &
 Matrix<T, ROWS, COLS>::operator=(Matrix<T, ROWS, COLS> &&other)
 {
-	log_info("MATRIX assign r_value\n");
-	m_matrix = other.m_matrix;
+	log_info("MATRIX ASSIGN r_value => move\n");
 	delete[] m_matrix;
+	m_matrix = other.m_matrix;
 	other.m_matrix = nullptr;
 	return *this;
 }
 
 template <typename T, uint8_t ROWS, uint8_t COLS>
-void Matrix<T, ROWS, COLS>::clear()
+constexpr Matrix<T, ROWS, COLS> &Matrix<T, ROWS, COLS>::clear()
 {
 	memset(m_matrix, 0, COLS * ROWS * sizeof(T));
+	return *this;
 }
 
 template <typename T, uint8_t ROWS, uint8_t COLS>
-void Matrix<T, ROWS, COLS>::fill(const T &v)
+constexpr Matrix<T, ROWS, COLS> &Matrix<T, ROWS, COLS>::fill(const T &v)
 {
-	for (uint8_t i = 0; i < ROWS; i++) {
-		for (uint8_t j = 0; j < COLS; j++) {
-			m_matrix[i * COLS + j] = v;
+	for (uint8_t r = 0; r < ROWS; r++) {
+		for (uint8_t c = 0; c < COLS; c++) {
+			m_matrix[r * COLS + c] = v;
 		}
 	}
-}
-
-template <typename T, uint8_t L_ROWS, uint8_t L_COLS_R_ROWS, uint8_t R_COLS>
-Matrix<T, L_ROWS, R_COLS> operator*(Matrix<T, L_ROWS, L_COLS_R_ROWS> l_m,
-				    Matrix<T, L_COLS_R_ROWS, R_COLS> r_m)
-{
-	log_info("MATRIX moltiplication [%hhu,%hhu] * [%hhu,%hhu] \n", L_ROWS,
-		 L_COLS_R_ROWS, L_COLS_R_ROWS, R_COLS);
-
-	Matrix<T, L_ROWS, R_COLS> m;
-	m.clear();
-	for (uint8_t i = 0; i < L_ROWS; i++) {
-		for (uint8_t j = 0; j < R_COLS; j++) {
-			for (uint8_t k = 0; k < L_COLS_R_ROWS; k++) {
-				m[i][j] += l_m[i][k] * r_m[k][j];
-			}
-		}
-	}
-	return m;
+	return *this;
 }
 
 template <typename T, uint8_t ROWS, uint8_t COLS>
-void Matrix<T, ROWS, COLS>::print(const char fmt[])
-{
-	for (uint8_t i = 0; i < ROWS; i++) {
-		log_debug("");
-		for (uint8_t j = 0; j < COLS; j++) {
-			log_debug_s(fmt, m_matrix[i * COLS + j]);
-		}
-		log_debug_s("\n");
-	}
-}
-
-template <typename T, uint8_t ROWS, uint8_t COLS>
-void Matrix<T, ROWS, COLS>::print()
+void Matrix<T, ROWS, COLS>::print() const
 {
 	if constexpr (std::is_integral_v<T>) {
 		if constexpr (std::is_unsigned_v<T>) {
@@ -247,6 +289,111 @@ void Matrix<T, ROWS, COLS>::print()
 			return;
 		}
 	}
+}
+
+//=============================================================================
+//						        PRIVATE METHODS
+//=============================================================================
+
+template <typename T, uint8_t ROWS, uint8_t COLS>
+void Matrix<T, ROWS, COLS>::print(const char fmt[]) const
+{
+	for (uint8_t r = 0; r < ROWS; r++) {
+		log_debug("");
+		for (uint8_t c = 0; c < COLS; c++) {
+			log_debug_s(fmt, m_matrix[c * COLS + r]);
+		}
+		log_debug_s("\n");
+	}
+}
+
+//=============================================================================
+//						        OTHER OPERATORS
+//=============================================================================
+
+template <typename T, uint8_t ROWS, uint8_t COLS>
+inline const Matrix<T, ROWS, COLS> operator*(const T &s,
+					     const Matrix<T, ROWS, COLS> &r_m)
+{
+	log_info("MATRIX MOLT &scalar x &matrix\n");
+
+	Matrix<T, ROWS, COLS> m;
+	for (uint8_t r = 0; r < ROWS; r++) {
+		for (uint8_t c = 0; c < COLS; c++) {
+			m[r][c] = r_m[r][c] * s;
+		}
+	}
+	return m;
+}
+
+template <typename T, uint8_t ROWS, uint8_t COLS>
+inline const Matrix<T, ROWS, COLS> operator*(const T &&s,
+					     const Matrix<T, ROWS, COLS> r_m)
+{
+	log_info("MATRIX MOLT &&scalar x &matrix\n");
+
+	Matrix<T, ROWS, COLS> m;
+	for (uint8_t r = 0; r < ROWS; r++) {
+		for (uint8_t c = 0; c < COLS; c++) {
+			m[r][c] = r_m[r][c] * s;
+		}
+	}
+	return m;
+}
+
+template <typename T, uint8_t L_ROWS, uint8_t L_COLS_R_ROWS, uint8_t R_COLS>
+inline const Matrix<T, L_ROWS, R_COLS>
+operator*(const Matrix<T, L_ROWS, L_COLS_R_ROWS> &l_m,
+	  const Matrix<T, L_COLS_R_ROWS, R_COLS> &r_m)
+{
+	log_info("MATRIX MOLT &[%hhu,%hhu] x &[%hhu,%hhu] \n", L_ROWS,
+		 L_COLS_R_ROWS, L_COLS_R_ROWS, R_COLS);
+
+	Matrix<T, L_ROWS, R_COLS> m;
+	m.clear();
+	for (uint8_t l_r = 0; l_r < L_ROWS; l_r++) {
+		for (uint8_t r_c = 0; r_c < R_COLS; r_c++) {
+			for (uint8_t i = 0; i < L_COLS_R_ROWS; i++) {
+				m[l_r][r_c] += l_m[l_r][i] * r_m[i][r_c];
+			}
+		}
+	}
+	return m;
+}
+
+template <typename T, uint8_t ROWS, uint8_t COLS>
+inline const Matrix<T, ROWS, COLS> &operator*=(Matrix<T, ROWS, COLS> &l_m,
+					       const Matrix<T, ROWS, COLS> &r_m)
+{
+	log_info("MATRIX &matrix *= &matrix\n");
+	return l_m = l_m * r_m;
+}
+
+template <typename T, uint8_t ROWS, uint8_t COLS>
+inline const bool operator!=(const Matrix<T, ROWS, COLS> &l_m,
+			     const Matrix<T, ROWS, COLS> &r_m)
+{
+	log_info("MATRIX this != &matrix\n");
+
+	if (&l_m == &r_m)
+		return false;
+
+	for (uint8_t r = 0; r < ROWS; r++) {
+		for (uint8_t c = 0; c < COLS; c++) {
+			if (l_m[r][c] != r_m[r][c])
+				return true;
+		}
+	}
+	return false;
+}
+
+template <typename T, uint8_t ROWS, uint8_t COLS>
+inline const bool operator==(const Matrix<T, ROWS, COLS> &l_m,
+			     const Matrix<T, ROWS, COLS> &r_m)
+{
+	log_info("MATRIX this == &matrix\n");
+
+	return !(l_m != r_m);
 }
 
 } // arc
