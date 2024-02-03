@@ -13,6 +13,7 @@
 
 #include "pico/stdlib.h"
 #include "hardware/i2c.h"
+#include "math/matrix.hpp"
 
 #define MPU6050_SELF_TEST_SAMPLES 20
 #define MPU6050_SELF_TEST_SLEEP 10
@@ -22,6 +23,8 @@
 #define MPU6050_GYRO_CALIB_SAMPLES 1000
 #define MPU6050_GYRO_CALIB_THR 500
 #define MPU6050_GYRO_CALIB_SLEEP 1
+
+using namespace arc::math;
 
 namespace arc {
 namespace sensors {
@@ -88,8 +91,10 @@ class MPU6050 {
 
 	int getRawAcc(int16_t accel[3]);
 	int getAcc(float accel[3]);
+	int getAcc(Matrix<float, 3, 1> &accel);
 	void printRawAcc(int16_t accel[3]);
 	void printAcc(float accel[3]);
+	void printAcc(Matrix<float, 3, 1> &accel);
 	int setAccRange(AccRange range);
 	int enableAccSelfTest();
 	int disableAccSelfTest();

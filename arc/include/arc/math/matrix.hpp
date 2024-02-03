@@ -11,7 +11,6 @@
 
 #pragma once
 
-#include <type_traits>
 #include <initializer_list>
 
 #include "pico/stdlib.h"
@@ -291,6 +290,14 @@ inline Matrix<T, ROWS, COLS> &&operator+(Matrix<T, ROWS, COLS> &&l_m,
 					 const Matrix<T, ROWS, COLS> &r_m)
 {
 	log_debug("MATRIX ADD &&matrix + &matrix\n");
+	return static_cast<Matrix<T, ROWS, COLS> &&>(l_m += r_m);
+}
+
+template <typename T, uint8_t ROWS, uint8_t COLS>
+inline Matrix<T, ROWS, COLS> &&operator+(Matrix<T, ROWS, COLS> &&l_m,
+					 Matrix<T, ROWS, COLS> &&r_m)
+{
+	log_debug("MATRIX ADD &&matrix + &&matrix\n");
 	return static_cast<Matrix<T, ROWS, COLS> &&>(l_m += r_m);
 }
 

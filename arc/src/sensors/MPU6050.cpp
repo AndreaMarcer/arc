@@ -740,6 +740,25 @@ int MPU6050::getAcc(float accel[3])
 	return 0;
 }
 
+int MPU6050::getAcc(Matrix<float, 3, 1> &accel)
+{
+	uint8_t buf[6];
+	int ret = read(ACC_X_H_ADDR, buf, 6);
+	if (ret != 0) {
+		log_error("Error in read(). (%s)\n", strerror(ret));
+		return ret;
+	}
+
+	accel[0][0] =
+		static_cast<int16_t>((buf[0] << 8) | buf[1]) * m_acc_scale;
+	accel[1][0] =
+		static_cast<int16_t>((buf[2] << 8) | buf[3]) * m_acc_scale;
+	accel[2][0] =
+		static_cast<int16_t>((buf[4] << 8) | buf[5]) * m_acc_scale;
+
+	return 0;
+}
+
 void MPU6050::printAcc(float accel[3])
 {
 	if (accel == nullptr) {
@@ -749,6 +768,11 @@ void MPU6050::printAcc(float accel[3])
 
 	printf("Acc = [%f, %f, %f]\t|.| = %f\n", accel[0], accel[1], accel[2],
 	       arc::common::modf(accel));
+}
+
+void MPU6050::printAcc(Matrix<float, 3, 1> &accel)
+{
+	printf("Acc = [%f, %f, %f]\n", accel[0][0], accel[1][0], accel[2][0]);
 }
 
 int MPU6050::getRawAcc(int16_t accel[3])
