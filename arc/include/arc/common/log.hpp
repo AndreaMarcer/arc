@@ -12,6 +12,7 @@
 #pragma once
 
 #include "pico/stdlib.h"
+#include "common/common.hpp"
 #include <string.h>
 
 #define LOG_ERROR 1
@@ -35,7 +36,7 @@
 
 #define FILENAME(x) strstr(x, "/arc") + 5
 
-#ifdef LOG_DEBUG
+#if defined(LOG_DEBUG) && !defined(NDEBUG)
 #define log_debug(M, ...)                                                 \
 	MULTILINE_DEFINE_BEGINE                                           \
 	fprintf(stdout, LOG_PURPLE "[DEBUG] " LOG_NONE M, ##__VA_ARGS__); \
@@ -46,6 +47,7 @@
 	MULTILINE_DEFINE_END
 #else
 #define log_debug(m, ...)
+#define log_debug_s(m, ...)
 #endif
 
 #if LOG_LEVEL >= LOG_ERROR
@@ -63,8 +65,13 @@
 	MULTILINE_DEFINE_BEGINE                                        \
 	fprintf(stdout, LOG_RED "[CRIT ] " LOG_NONE M, ##__VA_ARGS__); \
 	MULTILINE_DEFINE_END
+#define log_critical_s(M, ...)             \
+	MULTILINE_DEFINE_BEGINE            \
+	fprintf(stdout, M, ##__VA_ARGS__); \
+	MULTILINE_DEFINE_END
 #else
 #define log_critical(m, ...)
+#define log_critical_s(M, ...)
 #endif
 
 #if LOG_LEVEL >= LOG_WARNING
@@ -72,8 +79,13 @@
 	MULTILINE_DEFINE_BEGINE                                           \
 	fprintf(stdout, LOG_YELLOW "[WARN ] " LOG_NONE M, ##__VA_ARGS__); \
 	MULTILINE_DEFINE_END
+#define log_warning_s(M, ...)              \
+	MULTILINE_DEFINE_BEGINE            \
+	fprintf(stdout, M, ##__VA_ARGS__); \
+	MULTILINE_DEFINE_END
 #else
 #define log_warning(m, ...)
+#define log_warning_s(M, ...)
 #endif
 
 #if LOG_LEVEL >= LOG_INFO
@@ -81,8 +93,13 @@
 	MULTILINE_DEFINE_BEGINE                                         \
 	fprintf(stdout, LOG_BOLD "[INFO ] " LOG_NONE M, ##__VA_ARGS__); \
 	MULTILINE_DEFINE_END
+#define log_info_s(M, ...)                 \
+	MULTILINE_DEFINE_BEGINE            \
+	fprintf(stdout, M, ##__VA_ARGS__); \
+	MULTILINE_DEFINE_END
 #else
 #define log_info(m, ...)
+#define log_info_s(M, ...)
 #endif
 
 namespace arc {
