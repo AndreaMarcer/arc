@@ -19,6 +19,7 @@
 #include "common/log.hpp"
 #include "common/common.hpp"
 #include "common/geometry.hpp"
+#include "common/stopwatch.hpp"
 #include "math/matrix.hpp"
 #include "sensors/MPU6050.hpp"
 
