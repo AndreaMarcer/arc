@@ -9,84 +9,70 @@
  *
  */
 
+/*****************************************************************************\
+|                                   INCLUDES                                  |
+\*****************************************************************************/
 #include <stdio.h>
 #include <iostream>
 
-#include "pico/stdlib.h"
 #include "hardware/i2c.h"
 #include "hardware/gpio.h"
-#include "math.h"
 #include "hardware/xosc.h"
+#include "math.h"
+#include "pico/stdlib.h"
+
+#include "Eigen/Core"
 
 #include "common/log.hpp"
 #include "common/common.hpp"
 #include "common/stopwatch.hpp"
-#include "Eigen/Core"
-// #include "sensors/MPU6050.hpp"
+#include "sensors/MPU6050.hpp"
 
-// uint32_t cnt = 0;
-// bool new_data = false;
-// Stopwatch stopwatch;
-
-// void gpio_callback(uint gpio, uint32_t events)
-// {
-// 	cnt++;
-// 	new_data = true;
-// 	stopwatch.start();
-// }
-
+/*****************************************************************************\
+|                                     MAIN                                    |
+\*****************************************************************************/
 int main() {
+    using namespace arc::sensors;
+    using namespace arc::common;
+
     stdio_init_all();
 
-    // This example will use I2C0 on the default SDA and SCL pins (4, 5 on a
-    // Pico)
     i2c_init(i2c_default, 400 * 1000);
     gpio_set_function(PICO_DEFAULT_I2C_SDA_PIN, GPIO_FUNC_I2C);
     gpio_set_function(PICO_DEFAULT_I2C_SCL_PIN, GPIO_FUNC_I2C);
     gpio_pull_up(PICO_DEFAULT_I2C_SDA_PIN);
     gpio_pull_up(PICO_DEFAULT_I2C_SCL_PIN);
 
-    // gpio_set_irq_enabled_with_callback(9, GPIO_IRQ_EDGE_RISE, true,
-    // 				   &gpio_callback);
+    log_info << "=======================\n";
 
-    log_info("=======================\n");
-
-    // MPU6050 mpu6050{ i2c_default, MPU6050::I2C_ADDR_AD0_LOW };
-    // mpu6050.setDLPFConfig(MPU6050::DlpfBW::_184Hz);
-    // mpu6050.setAccRange(MPU6050::AccRange::_2G);
+    MPU6050 mpu6050{i2c_default, MPU6050::I2C_ADDR_AD0_LOW};
+    mpu6050.setDLPFConfig(MPU6050::DlpfBW::_184Hz);
+    mpu6050.setAccRange(MPU6050::AccRange::_2G);
     // mpu6050.enableInterrupt();
-    // mpu6050.wake();
+    mpu6050.wake();
 
-    // sleep_ms(100);
+    sleep_ms(100);
 
-    // arc::math::Matrix<float, 3, 1> acc(0);
-    // arc::math::Matrix<float, 3, 1> prev_acc(0);
-    // float acc[3]{ 0 };
-    // float prev_acc[3]{ 0 };
+    Eigen::Vector<float, 3> acc;
+    Eigen::Vector<float, 3> gyro;
+
     // uint8_t tmp;
-    // uint64_t cnt{ 0 };
-    // Stopwatch stopwatch;
-    // while (1) {
-    // 	stopwatch.start();
-    // 	mpu6050.getInterruptStatus(tmp);
+    Stopwatch stopwatch;
+    while (0) {
+        // mpu6050.getInterruptStatus(tmp);
 
-    // 	gpio_set_dormant_irq_enabled(
-    // 		9, IO_BANK0_DORMANT_WAKE_INTE0_GPIO0_EDGE_HIGH_BITS,
-    // 		true);
+        // gpio_set_dormant_irq_enabled(
+        //     9, IO_BANK0_DORMANT_WAKE_INTE0_GPIO0_EDGE_HIGH_BITS, true);
 
-    // 	xosc_dormant();
-    // 	stopwatch.stop().print().reset();
+        // xosc_dormant();
 
-    // 	cnt++;
-    // 	mpu6050.getAcc(acc);
-    // 	for (uint8_t i = 0; i < 3; i++) {
-    // 		acc[i] = 0.5f * acc[i] + 0.5f * prev_acc[i];
-    // 		prev_acc[i] = acc[i];
-    // 	}
-    // 	// acc = 0.9f * acc + 0.1f * prev_acc;
-    // 	// prev_acc = acc;
-    // 	mpu6050.printAcc(acc);
+        stopwatch.start();
+        mpu6050.getAcc(acc);
+        mpu6050.getGyro(gyro);
+        stopwatch.stop().print().reset();
+        log_info << acc.transpose() << "\t|.| = " << acc.squaredNorm() << "\n";
+        log_info << gyro.transpose() << "\n";
 
-    // 	sleep_ms(500);
-    // }
+        sleep_ms(5000);
+    }
 }

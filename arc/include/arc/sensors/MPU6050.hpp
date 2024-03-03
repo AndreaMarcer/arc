@@ -11,9 +11,17 @@
 
 #pragma once
 
-#include "pico/stdlib.h"
+/*****************************************************************************\
+|                                   INCLUDES                                  |
+\*****************************************************************************/
 #include "hardware/i2c.h"
+#include "pico/stdlib.h"
 
+#include "Eigen/Core"
+
+/*****************************************************************************\
+|                                    MACROS                                   |
+\*****************************************************************************/
 #define MPU6050_SELF_TEST_SAMPLES 20
 #define MPU6050_SELF_TEST_SLEEP 10
 #define MPU6050_SELF_TEST_ACC_THR 0.1
@@ -23,9 +31,11 @@
 #define MPU6050_GYRO_CALIB_THR 500
 #define MPU6050_GYRO_CALIB_SLEEP 1
 
-namespace arc {
-namespace sensors {
+namespace arc::sensors {
 
+/*****************************************************************************\
+|                                   MPU6050                                   |
+\*****************************************************************************/
 class MPU6050 {
 public:
     enum class DlpfBW {
@@ -86,20 +96,16 @@ public:
 
     int read(uint8_t reg, uint8_t *buf, size_t bytes = 1);
 
-    int getRawAcc(int16_t accel[3]);
-    int getAcc(float accel[3]);
-    void printRawAcc(int16_t accel[3]);
-    void printAcc(float accel[3]);
+    int getRawAcc(Eigen::Vector<int16_t, 3> &);
+    int getAcc(Eigen::Vector<float, 3> &);
     int setAccRange(AccRange range);
     int enableAccSelfTest();
     int disableAccSelfTest();
 
-    int getRawGyro(int16_t gyro[3]);
-    int getGyro(float gyro[3]);
-    void printRawGyro(int16_t gyro[3]);
-    void printGyro(float gyro[3]);
-    int setGyroRange(GyroRange range, bool recalibrate = true);
-    int getGyroRange(GyroRange &range);
+    int getRawGyro(Eigen::Vector<int16_t, 3> &);
+    int getGyro(Eigen::Vector<float, 3> &);
+    int setGyroRange(GyroRange, bool = true);
+    int getGyroRange(GyroRange &);
     int enableGyroSelfTest();
     int disableGyroSelfTest();
     void setGyroRad();
@@ -127,24 +133,14 @@ private:
     bool m_I2C_master_mode{false};
     bool m_I2C_enabled{false};
 
-    uint8_t m_acc_scale_index{0};
     float m_acc_scale{1.0};
-    float m_acc_self_test[3];
 
-    uint8_t m_DLPF_conf{0};
-    uint8_t m_gyro_scale_index{0};
     float m_gyro_scale{1.0};
-    int16_t m_gyro_offset[3]{0};
+    Eigen::Vector<int16_t, 3> m_gyro_offset{};
     bool m_gyro_in_rad{false};
     bool m_gyro_calibrated{false};
-    float m_gyro_self_test[3];
 
-    bool m_temp_enabled{false};
-
-    uint8_t m_clk_sel{0};
-    bool m_FIFO_enabled{false};
     bool m_self_test_fail{false};
 };
 
-}  // namespace sensors
-}  // namespace arc
+}  // namespace arc::sensors

@@ -1,20 +1,31 @@
 /**
  * @file constants.hpp
  * @author Andrea Marcer (marcera.andrea@gmail.com)
- * @brief 
+ * @brief
  * @version 0.1
  * @date 2024-01-12
- * 
+ *
  * @copyright Copyright (c) 2024
- * 
+ *
  */
 
 #pragma once
 
-namespace arc {
-namespace common {
+/*****************************************************************************\
+|                                   INCLUDES                                  |
+\*****************************************************************************/
+#include "math.h"
 
+/*****************************************************************************\
+|                                    COMMON                                   |
+\*****************************************************************************/
+namespace arc::common {
+
+/*****************************************************************************\
+|                                  CONSTANTS                                  |
+\*****************************************************************************/
+constexpr float DEG2RAD = M_PI / 180.0f;
+constexpr float RAD2DEG = 180.0f / M_PI;
 constexpr float k_g = 9.80665f;
 
-} // arc
-} // common
+}  // namespace arc::common

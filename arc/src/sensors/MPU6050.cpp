@@ -9,15 +9,19 @@
  *
  */
 
-#include <stdio.h>
-#include "math.h"
-#include "sensors/MPU6050.hpp"
-#include "common/common.hpp"
-#include "common/log.hpp"
+/*****************************************************************************\
+|                                   INCLUDES                                  |
+\*****************************************************************************/
 #include <errno.h>
 
-namespace arc {
-namespace sensors {
+#include "math.h"
+
+#include "common/log.hpp"
+#include "common/common.hpp"
+#include "common/constants.hpp"
+#include "sensors/MPU6050.hpp"
+
+namespace arc::sensors {
 
 static constexpr uint8_t TEST_X_ADDR = 0x0D;
 static constexpr uint8_t XA_TEST_4_2_BITS = 0xE0;
@@ -205,19 +209,19 @@ int MPU6050::read(uint8_t reg, uint8_t *buf, size_t bytes) {
     int ret = 0;
 
     if (buf == nullptr || bytes <= 0 || reg > WHO_AM_I_ADDR) {
-        log_error("Invalid argument\n");
+        log_error << "Invalid argument\n";
         return EINVAL;
     }
 
     ret = i2c_write_blocking(m_i2c_inst, m_addr, &reg, 1, true);
     if (ret != 1) {
-        log_error("Error in i2c_write_blocking()\n");
+        log_error << "Error in i2c_write_blocking()\n";
         return EIO;
     }
 
     ret = i2c_read_blocking(m_i2c_inst, m_addr, buf, bytes, false);
     if (ret != static_cast<int>(bytes)) {
-        log_error("Error in i2c_write_blocking()\n");
+        log_error << "Error in i2c_write_blocking()\n";
         return EIO;
     }
 
@@ -226,7 +230,7 @@ int MPU6050::read(uint8_t reg, uint8_t *buf, size_t bytes) {
 
 int MPU6050::setAccRange(AccRange range) {
     if (range < AccRange::_2G || range > AccRange::_16G) {
-        log_error("Invalid argument\n");
+        log_error << "Invalid argument\n";
         return EINVAL;
     }
 
@@ -235,7 +239,7 @@ int MPU6050::setAccRange(AccRange range) {
     uint8_t acc_conf;
     ret = read(ACC_CONF_ADDR, &acc_conf, 1);
     if (ret != 0) {
-        log_error("Error in read(). (%s)\n", strerror(ret));
+        log_error << "Error in read(). (" << strerror(ret) << ")\n";
         return ret;
     }
 
@@ -244,26 +248,30 @@ int MPU6050::setAccRange(AccRange range) {
     uint8_t data[2] = {ACC_CONF_ADDR, acc_conf};
     ret = i2c_write_blocking(m_i2c_inst, m_addr, data, 2, false);
     if (ret != 2) {
-        log_error("Error in i2c_write_blocking()\n");
+        log_error << "Error in i2c_write_blocking()\n";
         return EIO;
     }
 
     switch (range) {
         case AccRange::_2G:
             m_acc_scale = 1.0f / (1 << 14);
-            log_debug("Acceleration scale set to 2g: %f\n", m_acc_scale);
+            log_debug << "Acceleration scale set to 2g: " << m_acc_scale
+                      << "\n";
             break;
         case AccRange::_4G:
             m_acc_scale = 1.0f / (1 << 13);
-            log_debug("Acceleration scale set to 4g: %f\n", m_acc_scale);
+            log_debug << "Acceleration scale set to 4g: " << m_acc_scale
+                      << "\n";
             break;
         case AccRange::_8G:
             m_acc_scale = 1.0f / (1 << 12);
-            log_debug("Acceleration scale set to 8g: %f\n", m_acc_scale);
+            log_debug << "Acceleration scale set to 8g: " << m_acc_scale
+                      << "\n";
             break;
         case AccRange::_16G:
             m_acc_scale = 1.0f / (1 << 11);
-            log_debug("Acceleration scale set to 16g: %f\n", m_acc_scale);
+            log_debug << "Acceleration scale set to 16g: " << m_acc_scale
+                      << "\n";
             break;
     }
 
@@ -274,7 +282,7 @@ int MPU6050::setAccRange(AccRange range) {
 
 int MPU6050::setGyroRange(GyroRange range, bool recalibrate) {
     if (range < GyroRange::_250 || range > GyroRange::_2000) {
-        log_error("Invalid argument\n");
+        log_error << "Invalid argument\n";
         return EINVAL;
     }
 
@@ -282,7 +290,7 @@ int MPU6050::setGyroRange(GyroRange range, bool recalibrate) {
     uint8_t gyro_conf;
     ret = read(GYRO_CONF_ADDR, &gyro_conf, 1);
     if (ret != 0) {
-        log_error("Error in read(). (%s)\n", strerror(ret));
+        log_error << "Error in read(). (" << strerror(ret) << ")\n";
         return ret;
     }
 
@@ -291,42 +299,47 @@ int MPU6050::setGyroRange(GyroRange range, bool recalibrate) {
     uint8_t data[2] = {GYRO_CONF_ADDR, gyro_conf};
     ret = i2c_write_blocking(m_i2c_inst, m_addr, data, 2, false);
     if (ret != 2) {
-        log_error("Error in i2c_write_blocking()\n");
+        log_error << "Error in i2c_write_blocking()\n";
         return EIO;
     }
 
     if (recalibrate) {
         ret = calibrateGyro();
         if (ret != 0) {
-            log_error("Error in calibrateGyro(). (%s)\n", strerror(ret));
+            log_error << "Error in calibrateGyro(). (" << strerror(ret)
+                      << ")\n";
             return ret;
         }
     } else {
-        log_debug("Skip recalibration\n");
+        log_debug << "Skip recalibration\n";
     }
 
     switch (range) {
         case GyroRange::_250:
             m_gyro_scale = 1.0f / (1 << 14);
-            log_debug("Gyroscope scale set to 250°: %f\n", m_gyro_scale);
+            log_debug << "Gyroscope scale set to 250°: " << m_gyro_scale
+                      << "\n";
             break;
         case GyroRange::_500:
             m_gyro_scale = 1.0f / (1 << 13);
-            log_debug("Gyroscope scale set to 500°: %f\n", m_gyro_scale);
+            log_debug << "Gyroscope scale set to 500°: " << m_gyro_scale
+                      << "\n";
             break;
         case GyroRange::_1000:
             m_gyro_scale = 1.0f / (1 << 12);
-            log_debug("Gyroscope scale set to 1000°: %f\n", m_gyro_scale);
+            log_debug << "Gyroscope scale set to 1000°: " << m_gyro_scale
+                      << "\n";
             break;
         case GyroRange::_2000:
             m_gyro_scale = 1.0f / (1 << 11);
-            log_debug("Gyroscope scale set to 2000°: %f\n", m_gyro_scale);
+            log_debug << "Gyroscope scale set to 2000°: " << m_gyro_scale
+                      << "\n";
             break;
     }
 
     if (m_gyro_in_rad) {
         m_gyro_scale *= arc::common::DEG2RAD;
-        log_debug("Gyro scale set to radians: %f\n", m_gyro_scale);
+        log_debug << "Gyro scale set to radians: " << m_gyro_scale << "\n";
     }
 
     sleep_ms(10);
@@ -339,7 +352,7 @@ int MPU6050::getGyroRange(GyroRange &range) {
     uint8_t gyro_conf;
     ret = read(GYRO_CONF_ADDR, &gyro_conf, 1);
     if (ret != 0) {
-        log_error("Error in read(). (%s)\n", strerror(ret));
+        log_error << "Error in read(). (" << strerror(ret) << ")\n";
         return ret;
     }
     range = static_cast<GyroRange>((gyro_conf & GYRO_RANGE_BITS) >> 3);
@@ -350,9 +363,9 @@ void MPU6050::setGyroRad() {
     if (!m_gyro_in_rad) {
         m_gyro_scale *= arc::common::DEG2RAD;
         m_gyro_in_rad = true;
-        log_debug("Gyro scale set to radians: %f\n", m_gyro_scale);
+        log_debug << "Gyro scale set to radians: " << m_gyro_scale << "\n";
     } else {
-        log_debug("Gyro already set to radians: %f\n", m_gyro_scale);
+        log_debug << "Gyro already set to radians: " << m_gyro_scale << "\n";
     }
 }
 
@@ -360,15 +373,15 @@ void MPU6050::setGyroDeg() {
     if (m_gyro_in_rad) {
         m_gyro_scale *= arc::common::RAD2DEG;
         m_gyro_in_rad = false;
-        log_debug("Gyro scale set to degrees: %f\n", m_gyro_scale);
+        log_debug << "Gyro scale set to degrees: " << m_gyro_scale << "\n";
     } else {
-        log_debug("Gyro already set to degrees: %f\n", m_gyro_scale);
+        log_debug << "Gyro already set to degrees: " << m_gyro_scale << "\n";
     }
 }
 
 int MPU6050::selfTest() {
-    log_info("\n");
-    log_info("SELF TEST:\n");
+    log_info << "\n";
+    log_info << "SELF TEST:\n";
 
     int ret = 0;
 
@@ -376,78 +389,80 @@ int MPU6050::selfTest() {
     uint8_t buf[4];
     ret = read(TEST_X_ADDR, buf, 4);
     if (ret != 0) {
-        log_error("Error in read(). (%s)\n", strerror(ret));
+        log_error << "Error in read(). (" << strerror(ret) << ")\n";
         return ret;
     };
 
-    log_debug(" - REGISTERS:\n");
+    log_debug << " - REGISTERS:\n";
     for (uint8_t i = 0; i < 4; i++) {
-        log_debug("   - 0x%02.X: %s\n", 0x0D + i, BYTE2STR(buf[i]));
+        log_debug << "   - 0x" << HEX2STR(0x0D + i, 2) << ": "
+                  << BYTE2STR(buf[i]) << std::endl;
     }
 #endif
 
     ret = accSelfTest();
     if (ret != 0) {
-        log_error("Error in accSelfTest(). (%s)\n", strerror(ret));
+        log_error << "Error in accSelfTest(). (" << strerror(ret) << ")\n";
         return ret;
     }
     if (m_self_test_fail) {
-        log_critical("Accelerometer Self Test failed\n");
+        log_critical << "Accelerometer Self Test failed\n";
         return 0;
     }
 
     ret = gyroSelfTest();
     if (ret != 0) {
-        log_error("Error in gyroSelfTest(). (%s)\n", strerror(ret));
+        log_error << "Error in gyroSelfTest(). (" << strerror(ret) << ")\n";
         return ret;
     }
     if (m_self_test_fail) {
-        log_critical("Accelerometer Self Test failed\n");
+        log_critical << "Accelerometer Self Test failed\n";
     }
 
     return 0;
 }
 
 int MPU6050::accSelfTest() {
-    log_info(" - Accelerometer:\n");
+    log_info << " - Accelerometer:\n";
 
     uint8_t buf[4];
     float FT[3];
     int8_t acc_fact_test[3];
     uint8_t reg_10_mask = 0b00110000;
-    int16_t raw_acc[3];
+    Eigen::Vector<int16_t, 3> raw_acc;
     int32_t selftest_response[3] = {0};
 
     int ret = 0;
     ret = read(TEST_X_ADDR, buf, 4);
     if (ret != 0) {
-        log_error("Error in read(). (%s)\n", strerror(ret));
+        log_error << "Error in read(). (" << strerror(ret) << ")\n";
         goto FAIL;
     }
 
-    log_debug("   - FT: [");
+    log_debug << "   - FT: [";
     for (uint8_t i = 0; i < 3; i++) {
         uint8_t acc_fact_test_4_2 = ((buf[i] & 0b11100000) >> 3);
         uint8_t acc_fact_test_1_0 = ((buf[3] & reg_10_mask) >> (4 - i * 2));
         acc_fact_test[i] = acc_fact_test_4_2 | acc_fact_test_1_0;
 
         FT[i] = accFactoryTrim(acc_fact_test[i]);
-        log_debug_s("%f, ", FT[i]);
+        log_debug_s << FT[i] << ", ";
         reg_10_mask >>= 2;
     }
-    log_debug_s("]\n");
+    log_debug_s << "]\n";
 
-    log_debug("   - Self Test \n");
+    log_debug << "   - Self Test \n";
     ret = enableAccSelfTest();
     if (ret != 0) {
-        log_error("Error in enableAccSelfTest(). (%s)\n", strerror(ret));
+        log_error << "Error in enableAccSelfTest(). (" << strerror(ret)
+                  << ")\n";
         goto FAIL;
     }
-    log_debug("     - Enabled\n");
+    log_debug << "     - Enabled\n";
     for (uint8_t i = 0; i < SELF_TEST_SAMPLES; i++) {
         ret = getRawAcc(raw_acc);
         if (ret != 0) {
-            log_error("Error in getRawAcc(). (%s)\n", strerror(ret));
+            log_error << "Error in getRawAcc(). (" << strerror(ret) << ")\n";
             goto FAIL;
         }
         for (uint8_t j = 0; j < 3; j++) {
@@ -458,14 +473,15 @@ int MPU6050::accSelfTest() {
 
     ret = disableAccSelfTest();
     if (ret != 0) {
-        log_error("Error in disableAccSelfTest(). (%s)\n", strerror(ret));
+        log_error << "Error in disableAccSelfTest(). (" << strerror(ret)
+                  << ")\n";
         goto FAIL;
     }
-    log_debug("     - Disabled\n");
+    log_debug << "     - Disabled\n";
     for (uint8_t i = 0; i < SELF_TEST_SAMPLES; i++) {
         ret = getRawAcc(raw_acc);
         if (ret != 0) {
-            log_error("Error in getRawAcc(). (%s)\n", strerror(ret));
+            log_error << "Error in getRawAcc(). (" << strerror(ret) << ")\n";
             goto FAIL;
         }
         for (uint8_t j = 0; j < 3; j++) {
@@ -474,21 +490,23 @@ int MPU6050::accSelfTest() {
         sleep_ms(SELF_TEST_SLEEP);
     }
 
+    float acc_self_test[3];
     for (uint8_t i = 0; i < 3; i++) {
-        m_acc_self_test[i] =
+        acc_self_test[i] =
             ((selftest_response[i] / SELF_TEST_SAMPLES) - FT[i]) / FT[i];
     }
 
-    if (abs(m_acc_self_test[0]) < SELF_TEST_ACC_THR &&
-        abs(m_acc_self_test[1]) < SELF_TEST_ACC_THR &&
-        abs(m_acc_self_test[2]) < SELF_TEST_ACC_THR) {
-        log_info("   - [%0.3f, %0.3f, %0.3f] => PASSED\n", m_acc_self_test[0],
-                 m_acc_self_test[1], m_acc_self_test[2]);
+    if (abs(acc_self_test[0]) < SELF_TEST_ACC_THR &&
+        abs(acc_self_test[1]) < SELF_TEST_ACC_THR &&
+        abs(acc_self_test[2]) < SELF_TEST_ACC_THR) {
+        log_info << "   - [" << std::setprecision(3) << acc_self_test[0] << ", "
+                 << acc_self_test[1] << ", " << acc_self_test[2]
+                 << "] => PASSED" << std::endl;
         return 0;
     }
-
-    log_critical("   - [%0.3f, %0.3f, %0.3f] => FAILED\n", m_acc_self_test[0],
-                 m_acc_self_test[1], m_acc_self_test[2]);
+    log_critical << "   - [" << std::setprecision(3) << acc_self_test[0] << ", "
+                 << acc_self_test[1] << ", " << acc_self_test[2]
+                 << "] => FAILED" << std::endl;
 
 FAIL:
     m_self_test_fail = true;
@@ -496,40 +514,41 @@ FAIL:
 }
 
 int MPU6050::gyroSelfTest() {
-    log_info(" - Gyroscope:\n");
+    log_info << " - Gyroscope:\n";
 
     uint8_t buf[4];
     float FT[3];
     int8_t gyro_fact_test[3];
-    int16_t raw_gyro[3];
+    Eigen::Vector<int16_t, 3> raw_gyro;
     int32_t selftest_response[3] = {0};
 
     int ret = 0;
     ret = read(TEST_X_ADDR, buf, 4);
     if (ret != 0) {
-        log_error("Error in read(). (%s)\n", strerror(ret));
+        log_error << "Error in read(). (" << strerror(ret) << ")\n";
         goto FAIL;
     }
 
-    log_debug("   - FT: [");
+    log_debug << "   - FT: [";
     for (uint8_t i = 0; i < 3; i++) {
         gyro_fact_test[i] = buf[i] & 0b00011111;
         FT[i] = gyroFactoryTrim(gyro_fact_test[i], i == 1);
-        log_debug_s("%f, ", FT[i]);
+        log_debug_s << FT[i] << ", ";
     }
-    log_debug_s("]\n");
+    log_debug_s << "]\n";
 
-    log_debug("   - Self Test \n");
+    log_debug << "   - Self Test \n";
     ret = enableGyroSelfTest();
     if (ret != 0) {
-        log_error("Error in enableGyroSelfTest(). (%s)\n", strerror(ret));
+        log_error << "Error in enableGyroSelfTest(). (" << strerror(ret)
+                  << ")\n";
         goto FAIL;
     }
-    log_debug("     - Enabled\n");
+    log_debug << "     - Enabled\n";
     for (uint8_t i = 0; i < SELF_TEST_SAMPLES; i++) {
         ret = getRawGyro(raw_gyro);
         if (ret != 0) {
-            log_error("Error in getRawGyro(). (%s)\n", strerror(ret));
+            log_error << "Error in getRawGyro(). (" << strerror(ret) << ")\n";
             goto FAIL;
         }
         for (uint8_t j = 0; j < 3; j++) {
@@ -540,14 +559,15 @@ int MPU6050::gyroSelfTest() {
 
     ret = disableGyroSelfTest();
     if (ret != 0) {
-        log_error("Error in disableGyroSelfTest(). (%s)\n", strerror(ret));
+        log_error << "Error in disableGyroSelfTest(). (" << strerror(ret)
+                  << ")\n";
         goto FAIL;
     }
-    log_debug("     - Disabled\n");
+    log_debug << "     - Disabled\n";
     for (uint8_t i = 0; i < SELF_TEST_SAMPLES; i++) {
         ret = getRawGyro(raw_gyro);
         if (ret != 0) {
-            log_error("Error in getRawGyro(). (%s)\n", strerror(ret));
+            log_error << "Error in getRawGyro(). (" << strerror(ret) << ")\n";
             goto FAIL;
         }
         for (uint8_t j = 0; j < 3; j++) {
@@ -556,22 +576,24 @@ int MPU6050::gyroSelfTest() {
         sleep_ms(SELF_TEST_SLEEP);
     }
 
+    float gyro_self_test[3];
     for (uint8_t i = 0; i < 3; i++) {
-        m_gyro_self_test[i] =
+        gyro_self_test[i] =
             ((selftest_response[i] / SELF_TEST_SAMPLES) - FT[i]) / FT[i];
     }
 
-    if (abs(m_gyro_self_test[0]) < SELF_TEST_GYRO_THR &&
-        abs(m_gyro_self_test[1]) < SELF_TEST_GYRO_THR &&
-        abs(m_gyro_self_test[2]) < SELF_TEST_GYRO_THR) {
-        log_info("   - [%0.3f, %0.3f, %0.3f] => PASSED\n", m_gyro_self_test[0],
-                 m_gyro_self_test[1], m_gyro_self_test[2]);
+    if (abs(gyro_self_test[0]) < SELF_TEST_GYRO_THR &&
+        abs(gyro_self_test[1]) < SELF_TEST_GYRO_THR &&
+        abs(gyro_self_test[2]) < SELF_TEST_GYRO_THR) {
+        log_info << "   - [" << std::setprecision(3) << gyro_self_test[0]
+                 << ", " << gyro_self_test[1] << ", " << gyro_self_test[2]
+                 << "] => PASSED" << std::endl;
         return 0;
     }
 
-    log_critical("   - [%0.3f, %0.3f, %0.3f] => FAILED\n", m_gyro_self_test[0],
-                 m_gyro_self_test[1], m_gyro_self_test[2]);
-
+    log_critical << "   - [" << std::setprecision(3) << gyro_self_test[0]
+                 << ", " << gyro_self_test[1] << ", " << gyro_self_test[2]
+                 << "] => FAILED" << std::endl;
 FAIL:
     m_self_test_fail = true;
     return ret;
@@ -582,14 +604,14 @@ int MPU6050::enableAccSelfTest() {
 
     ret = setAccRange(AccRange::_8G);
     if (ret != 0) {
-        log_error("Error in setAccRange(). (%s)\n", strerror(ret));
+        log_error << "Error in setAccRange(). (" << strerror(ret) << ")\n";
         return ret;
     }
 
     uint8_t buf;
     ret = read(ACC_CONF_ADDR, &buf, 1);
     if (ret != 0) {
-        log_error("Error in read(). (%s)\n", strerror(ret));
+        log_error << "Error in read(). (" << strerror(ret) << ")\n";
         return ret;
     }
 
@@ -599,7 +621,7 @@ int MPU6050::enableAccSelfTest() {
     uint8_t data[2] = {ACC_CONF_ADDR, buf};
     ret = i2c_write_blocking(m_i2c_inst, m_addr, data, 2, false);
     if (ret != 2) {
-        log_error("Error in i2c_write_blocking()\n");
+        log_error << "Error in i2c_write_blocking()\n";
         return EIO;
     }
 
@@ -613,7 +635,7 @@ int MPU6050::disableAccSelfTest() {
     uint8_t buf;
     ret = read(ACC_CONF_ADDR, &buf, 1);
     if (ret != 0) {
-        log_error("Error in read(). (%s)\n", strerror(ret));
+        log_error << "Error in read(). (" << strerror(ret) << ")\n";
         return ret;
     }
 
@@ -621,7 +643,7 @@ int MPU6050::disableAccSelfTest() {
     uint8_t data[2] = {ACC_CONF_ADDR, buf};
     ret = i2c_write_blocking(m_i2c_inst, m_addr, data, 2, false);
     if (ret != 2) {
-        log_error("Error in i2c_write_blocking()\n");
+        log_error << "Error in i2c_write_blocking()\n";
         return EIO;
     }
 
@@ -635,14 +657,14 @@ int MPU6050::enableGyroSelfTest() {
 
     ret = setGyroRange(GyroRange::_250, false);
     if (ret != 0) {
-        log_error("Error in setGyroRange(). (%s)\n", strerror(ret));
+        log_error << "Error in setGyroRange(). (" << strerror(ret) << ")\n";
         return ret;
     }
 
     uint8_t buf;
     ret = read(GYRO_CONF_ADDR, &buf, 1);
     if (ret != 0) {
-        log_error("Error in read(). (%s)\n", strerror(ret));
+        log_error << "Error in read(). (" << strerror(ret) << ")\n";
         return ret;
     }
 
@@ -652,7 +674,7 @@ int MPU6050::enableGyroSelfTest() {
     uint8_t data[2] = {GYRO_CONF_ADDR, buf};
     ret = i2c_write_blocking(m_i2c_inst, m_addr, data, 2, false);
     if (ret != 2) {
-        log_error("Error in i2c_write_blocking()\n");
+        log_error << "Error in i2c_write_blocking()\n";
         return EIO;
     }
 
@@ -666,7 +688,7 @@ int MPU6050::disableGyroSelfTest() {
     uint8_t buf;
     ret = read(GYRO_CONF_ADDR, &buf, 1);
     if (ret != 0) {
-        log_error("Error in read(). (%s)\n", strerror(ret));
+        log_error << "Error in read(). (" << strerror(ret) << ")\n";
         return ret;
     }
 
@@ -674,7 +696,7 @@ int MPU6050::disableGyroSelfTest() {
     uint8_t data[2] = {GYRO_CONF_ADDR, buf};
     ret = i2c_write_blocking(m_i2c_inst, m_addr, data, 2, false);
     if (ret != 2) {
-        log_error("Error in i2c_write_blocking()\n");
+        log_error << "Error in i2c_write_blocking()\n";
         return EIO;
     }
 
@@ -683,127 +705,70 @@ int MPU6050::disableGyroSelfTest() {
     return 0;
 }
 
-int MPU6050::getAcc(float accel[3]) {
-    if (accel == nullptr) {
-        log_error("Invalid argument\n");
-        return EINVAL;
-    }
-
+int MPU6050::getAcc(Eigen::Vector<float, 3> &accel) {
     uint8_t buf[6];
     int ret = read(ACC_X_H_ADDR, buf, 6);
     if (ret != 0) {
-        log_error("Error in read(). (%s)\n", strerror(ret));
+        log_error << "Error in read(). (" << strerror(ret) << ")\n";
         return ret;
     }
 
-    accel[0] = static_cast<int16_t>((buf[0] << 8) | buf[1]) * m_acc_scale;
-    accel[1] = static_cast<int16_t>((buf[2] << 8) | buf[3]) * m_acc_scale;
-    accel[2] = static_cast<int16_t>((buf[4] << 8) | buf[5]) * m_acc_scale;
+    accel.x() = static_cast<int16_t>((buf[0] << 8) | buf[1]) * m_acc_scale;
+    accel.y() = static_cast<int16_t>((buf[2] << 8) | buf[3]) * m_acc_scale;
+    accel.z() = static_cast<int16_t>((buf[4] << 8) | buf[5]) * m_acc_scale;
 
     return 0;
 }
 
-void MPU6050::printAcc(float accel[3]) {
-    if (accel == nullptr) {
-        log_error("Invalid argument\n");
-        return;
-    }
-
-    printf("Acc = [%f, %f, %f]\t|.| = %f\n", accel[0], accel[1], accel[2],
-           arc::common::modf(accel));
-}
-
-int MPU6050::getRawAcc(int16_t accel[3]) {
-    if (accel == nullptr) {
-        log_error("Invalid argument\n");
-        return EINVAL;
-    }
-
+int MPU6050::getRawAcc(Eigen::Vector<int16_t, 3> &accel) {
     uint8_t buf[6];
     int ret = read(ACC_X_H_ADDR, buf, 6);
     if (ret != 0) {
-        log_error("Error in read(). (%s)\n", strerror(ret));
+        log_error << "Error in read(). (" << strerror(ret) << ")\n";
         return ret;
     }
 
-    accel[0] = (buf[0] << 8) | buf[1];
-    accel[1] = (buf[2] << 8) | buf[3];
-    accel[2] = (buf[4] << 8) | buf[5];
+    accel.x() = static_cast<int16_t>((buf[0] << 8) | buf[1]);
+    accel.y() = static_cast<int16_t>((buf[2] << 8) | buf[3]);
+    accel.z() = static_cast<int16_t>((buf[4] << 8) | buf[5]);
 
     return 0;
 }
 
-void MPU6050::printRawAcc(int16_t accel[3]) {
-    if (accel == nullptr) {
-        log_error("Invalid argument\n");
-        return;
-    }
-
-    printf("Raw acc = [%d, %d, %d]\n", accel[0], accel[1], accel[2]);
-}
-
-int MPU6050::getGyro(float gyro[3]) {
-    if (gyro == nullptr) {
-        log_error("Invalid argument\n");
-        return EINVAL;
-    }
-
+int MPU6050::getGyro(Eigen::Vector<float, 3> &gyro) {
     uint8_t buf[6];
     int ret = read(GYRO_X_H_ADDR, buf, 6);
     if (ret != 0) {
-        log_error("Error in read(). (%s)\n", strerror(ret));
+        log_error << "Error in read(). (" << strerror(ret) << ")\n";
         return ret;
     }
 
-    gyro[0] =
-        (static_cast<int16_t>((buf[0] << 8) | buf[1]) - m_gyro_offset[0]) *
+    gyro.x() =
+        (static_cast<int16_t>((buf[0] << 8) | buf[1]) - m_gyro_offset.x()) *
         m_gyro_scale;
-    gyro[1] =
-        (static_cast<int16_t>((buf[2] << 8) | buf[3]) - m_gyro_offset[1]) *
+    gyro.y() =
+        (static_cast<int16_t>((buf[2] << 8) | buf[3]) - m_gyro_offset.y()) *
         m_gyro_scale;
-    gyro[2] =
-        (static_cast<int16_t>((buf[4] << 8) | buf[5]) - m_gyro_offset[2]) *
+    gyro.z() =
+        (static_cast<int16_t>((buf[4] << 8) | buf[5]) - m_gyro_offset.z()) *
         m_gyro_scale;
 
     return 0;
 }
 
-void MPU6050::printGyro(float gyro[3]) {
-    if (gyro == nullptr) {
-        log_error("Invalid argument\n");
-        return;
-    }
-
-    printf("Gyro = [%f, %f, %f]\n", gyro[0], gyro[1], gyro[2]);
-}
-
-int MPU6050::getRawGyro(int16_t gyro[3]) {
-    if (gyro == nullptr) {
-        log_error("Invalid argument\n");
-        return EINVAL;
-    }
-
+int MPU6050::getRawGyro(Eigen::Vector<int16_t, 3> &gyro) {
     uint8_t buf[6];
     int ret = read(GYRO_X_H_ADDR, buf, 6);
     if (ret != 0) {
-        log_error("Error in read(). (%s)\n", strerror(ret));
+        log_error << "Error in read(). (" << strerror(ret) << ")\n";
         return ret;
     }
 
-    gyro[0] = (buf[0] << 8) | buf[1];
-    gyro[1] = (buf[2] << 8) | buf[3];
-    gyro[2] = (buf[4] << 8) | buf[5];
+    gyro.x() = static_cast<int16_t>((buf[0] << 8) | buf[1]);
+    gyro.y() = static_cast<int16_t>((buf[2] << 8) | buf[3]);
+    gyro.z() = static_cast<int16_t>((buf[4] << 8) | buf[5]);
 
     return 0;
-}
-
-void MPU6050::printRawGyro(int16_t gyro[3]) {
-    if (gyro == nullptr) {
-        log_error("Invalid argument\n");
-        return;
-    }
-
-    printf("Raw gyro = [%d, %d, %d]\n", gyro[0], gyro[1], gyro[2]);
 }
 
 int MPU6050::enableInterrupt() {
@@ -812,7 +777,7 @@ int MPU6050::enableInterrupt() {
     uint8_t buf[] = {INT_PIN_CFG_ADDR, LATCH_INT_ENABLE_BIT};
     ret = i2c_write_blocking(m_i2c_inst, m_addr, buf, 2, false);
     if (ret != 2) {
-        log_error("Error in i2c_write_blocking()\n");
+        log_error << "Error in i2c_write_blocking()\n";
         return EIO;
     }
     sleep_ms(10);
@@ -820,7 +785,7 @@ int MPU6050::enableInterrupt() {
     uint8_t buf2[] = {INT_ENABLE_ADDR, DATA_READY_INT_BIT};
     ret = i2c_write_blocking(m_i2c_inst, m_addr, buf2, 2, false);
     if (ret != 2) {
-        log_error("Error in i2c_write_blocking()\n");
+        log_error << "Error in i2c_write_blocking()\n";
         return EIO;
     }
     sleep_ms(10);
@@ -831,7 +796,7 @@ int MPU6050::enableInterrupt() {
 int MPU6050::getInterruptStatus(uint8_t &int_status) {
     int ret = read(INT_STATUS_ADDR, &int_status, 1);
     if (ret != 0) {
-        log_error("Error in read(). (%s)\n", strerror(ret));
+        log_error << "Error in read(). (" << strerror(ret) << ")\n";
         return ret;
     }
 
@@ -844,7 +809,7 @@ int MPU6050::reset() {
     uint8_t pwr_mgmt;
     ret = read(PWR_MGMT_1_ADDR, &pwr_mgmt);
     if (ret != 0) {
-        log_error("Error in read(). (%s)\n", strerror(ret));
+        log_error << "Error in read(). (" << strerror(ret) << ")\n";
         return ret;
     }
 
@@ -852,7 +817,7 @@ int MPU6050::reset() {
     uint8_t buf[] = {PWR_MGMT_1_ADDR, reset_mask};
     ret = i2c_write_blocking(m_i2c_inst, m_addr, buf, 2, false);
     if (ret != 2) {
-        log_error("Error in i2c_write_blocking()\n");
+        log_error << "Error in i2c_write_blocking()\n";
         return EIO;
     }
     sleep_ms(100);
@@ -865,7 +830,7 @@ int MPU6050::reset_paths() {
     uint8_t buf[] = {SIGNAL_PATH_RESET_ADDR, reset_mask};
     int ret = i2c_write_blocking(m_i2c_inst, m_addr, buf, 2, false);
     if (ret != 2) {
-        log_error("Error in i2c_write_blocking()\n");
+        log_error << "Error in i2c_write_blocking()\n";
         return EIO;
     }
     sleep_ms(100);
@@ -878,7 +843,7 @@ int MPU6050::sleep() {
     uint8_t pwr_mgmt;
     ret = read(PWR_MGMT_1_ADDR, &pwr_mgmt);
     if (ret != 0) {
-        log_error("Error in read(). (%s)\n", strerror(ret));
+        log_error << "Error in read(). (" << strerror(ret) << ")\n";
         return ret;
     }
 
@@ -886,7 +851,7 @@ int MPU6050::sleep() {
     uint8_t buf2[] = {PWR_MGMT_1_ADDR, sleep_mask};
     ret = i2c_write_blocking(m_i2c_inst, m_addr, buf2, 2, false);
     if (ret != 2) {
-        log_error("Error in i2c_write_blocking()\n");
+        log_error << "Error in i2c_write_blocking()\n";
         return EIO;
     }
     sleep_ms(10);
@@ -899,7 +864,7 @@ int MPU6050::wake() {
     uint8_t pwr_mgmt;
     ret = read(PWR_MGMT_1_ADDR, &pwr_mgmt);
     if (ret != 0) {
-        log_error("Error in read(). (%s)\n", strerror(ret));
+        log_error << "Error in read(). (" << strerror(ret) << ")\n";
         return ret;
     }
 
@@ -907,7 +872,7 @@ int MPU6050::wake() {
     uint8_t buf2[] = {PWR_MGMT_1_ADDR, wake_mask};
     ret = i2c_write_blocking(m_i2c_inst, m_addr, buf2, 2, false);
     if (ret != 2) {
-        log_error("Error in i2c_write_blocking()\n");
+        log_error << "Error in i2c_write_blocking()\n";
         return EIO;
     }
     sleep_ms(10);
@@ -919,7 +884,7 @@ int MPU6050::getDLPFConfig(DlpfBW &cfg) {
     uint8_t dlpf_cfg;
     int ret = read(CONFIG_ADDR, &dlpf_cfg);
     if (ret != 0) {
-        log_error("Error in read(). (%s)\n", strerror(ret));
+        log_error << "Error in read(). (" << strerror(ret) << ")\n";
         return ret;
     }
 
@@ -933,7 +898,7 @@ int MPU6050::setDLPFConfig(DlpfBW cfg) {
     uint8_t dlpf_cfg;
     ret = read(CONFIG_ADDR, &dlpf_cfg);
     if (ret != 0) {
-        log_error("Error in read(). (%s)\n", strerror(ret));
+        log_error << "Error in read(). (" << strerror(ret) << ")\n";
         return ret;
     }
 
@@ -942,7 +907,7 @@ int MPU6050::setDLPFConfig(DlpfBW cfg) {
     uint8_t buf2[] = {CONFIG_ADDR, dlpf_cfg};
     ret = i2c_write_blocking(m_i2c_inst, m_addr, buf2, 2, false);
     if (ret != 2) {
-        log_error("Error in i2c_write_blocking()\n");
+        log_error << "Error in i2c_write_blocking()\n";
         return EIO;
     }
     sleep_ms(10);
@@ -957,21 +922,21 @@ int MPU6050::calibrateGyro() {
     GyroRange gyro_range;
     ret = getGyroRange(gyro_range);
     if (ret != 0) {
-        log_error("Error in getGyroRange(). (%s)\n", strerror(ret));
+        log_error << "Error in getGyroRange(). (" << strerror(ret) << ")\n";
         return ret;
     }
 
-    log_info("Gyro Calibration. STAY STILL\n");
-    int16_t raw_gyro[GYRO_CALIB_SAMPLES][3];
+    log_info << "Gyro Calibration. STAY STILL\n";
+    Eigen::Vector<int16_t, 3> raw_gyro[GYRO_CALIB_SAMPLES];
     for (uint16_t i = 0; i < GYRO_CALIB_SAMPLES; i++) {
         ret = getRawGyro(raw_gyro[i]);
         if (ret != 0) {
-            log_error("Error in getRawGyro(). (%s)\n", strerror(ret));
+            log_error << "Error in getRawGyro(). (" << strerror(ret) << ")\n";
             return ret;
         }
         sleep_ms(GYRO_CALIB_SLEEP);
     }
-    log_info("Gyro Calibration FINISHED\n");
+    log_info << "Gyro Calibration FINISHED\n";
 
     int64_t gyro_sum[3] = {0};
     for (uint16_t i = 0; i < GYRO_CALIB_SAMPLES; i++) {
@@ -980,13 +945,13 @@ int MPU6050::calibrateGyro() {
         }
     }
 
-    log_debug("Gyro Offset: ");
+    log_debug << "Gyro Offset: ";
     int16_t gyro_mean[3] = {0};
     for (uint8_t j = 0; j < 3; j++) {
         gyro_mean[j] = gyro_sum[j] / GYRO_CALIB_SAMPLES;
-        log_debug_s("%hd, ", gyro_mean[j]);
+        log_debug_s << gyro_mean[j] << ", ";
     }
-    log_debug_s("\n");
+    log_debug_s << std::endl;
 
     uint64_t gyro_sum_squared[3] = {0};
     for (uint16_t i = 0; i < GYRO_CALIB_SAMPLES; i++) {
@@ -996,20 +961,20 @@ int MPU6050::calibrateGyro() {
         }
     }
 
-    log_debug("Gyro STD: ");
+    log_debug << "Gyro STD: ";
     uint64_t gyro_std[3] = {0};
     for (uint8_t j = 0; j < 3; j++) {
         gyro_std[j] = gyro_sum_squared[j] / (GYRO_CALIB_SAMPLES - 1);
-        log_debug_s("%llu, ", gyro_std[j]);
+        log_debug_s << gyro_std[j] << ", ";
     }
-    log_debug_s("\n");
+    log_debug_s << "\n";
 
     uint64_t gyro_std_thr =
         GYRO_CALIB_THR / (1 << ((static_cast<uint64_t>(gyro_range) * 2)));
-    log_debug("Gyro STD Threshold: %llu\n", gyro_std_thr);
+    log_debug << "Gyro STD Threshold: " << gyro_std_thr << "\n";
     for (uint8_t j = 0; j < 3; j++) {
         if (gyro_std[j] > gyro_std_thr) {
-            log_critical("Gyroscope calibration FAILED. STD too high\n");
+            log_critical << "Gyroscope calibration FAILED. STD too high\n";
             return 0;
         }
     }
@@ -1022,5 +987,4 @@ int MPU6050::calibrateGyro() {
     return 0;
 }
 
-}  // namespace sensors
-}  // namespace arc
+}  // namespace arc::sensors
