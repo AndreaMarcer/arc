@@ -16,6 +16,7 @@ include/arc/math/matrix.hpp
 
 add_executable(arc ${SRCS} ${HEADERS})
 target_include_directories(arc PRIVATE include/arc)
+include_directories(${CMAKE_SOURCE_DIR}/external/eigen/) 
 
 # pull in common dependencies
 target_link_libraries(arc pico_stdlib hardware_i2c)
