@@ -1,25 +1,24 @@
 
+include_directories(${CMAKE_SOURCE_DIR}/external/eigen/) 
+
 set(SRCS 
 src/main.cpp
 src/sensors/MPU6050.cpp
 )
 
 set(HEADERS 
-include/arc/sensors/MPU6050.hpp
+# include/arc/sensors/MPU6050.hpp
 include/arc/common/constants.hpp
 include/arc/common/common.hpp
-include/arc/common/geometry.hpp
 include/arc/common/stopwatch.hpp
 include/arc/common/log.hpp
-include/arc/math/matrix.hpp
 )
 
 add_executable(arc ${SRCS} ${HEADERS})
 target_include_directories(arc PRIVATE include/arc)
-include_directories(${CMAKE_SOURCE_DIR}/external/eigen/) 
 
 # pull in common dependencies
-target_link_libraries(arc pico_stdlib hardware_i2c)
+target_link_libraries(arc pico_stdlib hardware_i2c hardware_xosc)
 
 # create map/bin/hex/uf2 file etc.
 pico_add_extra_outputs(arc)
