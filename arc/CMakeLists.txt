@@ -4,14 +4,16 @@ include_directories(${CMAKE_SOURCE_DIR}/external/eigen/)
 set(SRCS 
 src/main.cpp
 src/sensors/MPU6050.cpp
+src/control/kalman.cpp
 )
 
 set(HEADERS 
-# include/arc/sensors/MPU6050.hpp
+include/arc/sensors/MPU6050.hpp
 include/arc/common/constants.hpp
 include/arc/common/common.hpp
 include/arc/common/stopwatch.hpp
 include/arc/common/log.hpp
+include/arc/control/kalman.hpp
 )
 
 add_executable(arc ${SRCS} ${HEADERS})
