@@ -21,11 +21,10 @@
 #include "math.h"
 #include "pico/stdlib.h"
 
-#include "Eigen/Core"
-
 #include "common/log.hpp"
 #include "common/common.hpp"
 #include "common/stopwatch.hpp"
+#include "control/kalman.hpp"
 #include "sensors/MPU6050.hpp"
 
 /*****************************************************************************\
@@ -34,6 +33,8 @@
 int main() {
     using namespace arc::sensors;
     using namespace arc::common;
+    using namespace arc::control;
+    using namespace Eigen;
 
     stdio_init_all();
 
@@ -53,8 +54,8 @@ int main() {
 
     sleep_ms(100);
 
-    Eigen::Vector<float, 3> acc;
-    Eigen::Vector<float, 3> gyro;
+    Vector<float, 3> acc;
+    Vector<float, 3> gyro;
 
     // uint8_t tmp;
     Stopwatch stopwatch;
@@ -75,4 +76,73 @@ int main() {
 
         sleep_ms(5000);
     }
+
+    // clang-format off
+    Matrix<float, 6, 6> A;
+    A << 1.0, 1.0, 0.5, 0.0, 0.0, 0.0,
+         0.0, 1.0, 1.0, 0.0, 0.0, 0.0,
+         0.0, 0.0, 1.0, 0.0, 0.0, 0.0,
+         0.0, 0.0, 0.0, 1.0, 1.0, 0.5,
+         0.0, 0.0, 0.0, 0.0, 1.0, 1.0,
+         0.0, 0.0, 0.0, 0.0, 0.0, 1.0;
+
+    Matrix<float, 6, 6> P;
+    P << 500.0,   0.0,   0.0,   0.0,   0.0,   0.0,
+           0.0, 500.0,   0.0,   0.0,   0.0,   0.0,
+           0.0,   0.0, 500.0,   0.0,   0.0,   0.0,
+           0.0,   0.0,   0.0, 500.0,   0.0,   0.0,
+           0.0,   0.0,   0.0,   0.0, 500.0,   0.0,
+           0.0,   0.0,   0.0,   0.0,   0.0, 500.0;
+
+    Matrix<float, 6, 6> Q;
+    Q << 1/4, 1/2, 1/2, 0.0, 0.0, 0.0,
+         1/2, 1.0, 1.0, 0.0, 0.0, 0.0,
+         1/2, 1.0, 1.0, 0.0, 0.0, 0.0,
+         0.0, 0.0, 0.0, 1/4, 1/2, 1/2,
+         0.0, 0.0, 0.0, 1/2, 1.0, 1.0,
+         0.0, 0.0, 0.0, 1/2, 1.0, 1.0;
+    Q*=0.2*0.2;
+
+    Matrix<float, 2, 2> R;
+    R << 9.0, 0.0,
+         0.0, 9.0;
+
+    Matrix<float, 2, 6> H;
+    H << 1.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+         0.0, 0.0, 0.0, 1.0, 0.0, 0.0;
+    
+    Vector<float, 2> z;
+
+    KF<6, 2, 1> kf(
+        Vector<float, 6>::Zero(), 
+        A, 
+        Matrix<float, 6, 1>::Zero(), 
+        P,
+        Q, 
+        R, 
+        H
+    );
+    // clang-format on 
+
+    Stopwatch sw;
+
+    sw.start();
+    kf.predict();
+    sw.stop().print().reset();
+    kf.printState();
+    kf.printEstimateCovariance();
+    
+    z << 301.5, -401.46;
+    sw.start();
+    kf.update(z);
+    sw.stop().print();
+    kf.printState();
+    kf.printEstimateCovariance();
+    kf.printKalmanGain();
+
+    sw.start();
+    kf.predict();
+    sw.stop().print().reset();
+    kf.printState();
+    kf.printEstimateCovariance();
 }

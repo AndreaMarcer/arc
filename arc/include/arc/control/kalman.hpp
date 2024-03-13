@@ -14,11 +14,8 @@
 /*****************************************************************************\
 |                                   INCLUDES                                  |
 \*****************************************************************************/
-#include "Eigen/Core"
-
-/*****************************************************************************\
-|                                    MACROS                                   |
-\*****************************************************************************/
+#include "common/log.hpp"
+#include "Eigen/Eigen"
 
 namespace arc::control {
 
@@ -33,20 +30,70 @@ template <uint8_t N_x, uint8_t N_z, uint8_t N_u>
 class KF {
 public:
     KF(Vector<float, N_x> x_, Matrix<float, N_x, N_x> A_,
-       Matrix<float, N_x, N_u> B_, Matrix<float, N_x, N_x> Q,
-       Matrix<float, N_z, N_z> R, Matrix<float, N_z, N_x> H);
+       Matrix<float, N_x, N_u> B_, Matrix<float, N_x, N_x> P_,
+       Matrix<float, N_x, N_x> Q_, Matrix<float, N_z, N_z> R_,
+       Matrix<float, N_z, N_x> H_)
+        : x{x_}, A{A_}, B{B_}, P{P_}, Q{Q_}, R{R_}, H{H_} {};
 
     /**
      * @brief State Extrapolation
      *
      * @return Vector<float, N_x>&
      */
-    Vector<float, N_x> &predict(Vector<float, N_u> u);
+    Vector<float, N_x> &predict(Vector<float, N_u> u) {
+        // State Extrapolation
+        x = A * x + B * u;
+
+        // Covariance Extrapolation
+        P = A * P * A.transpose() + Q;
+        return x;
+    }
+
+    /**
+     * @brief State Extrapolation
+     *
+     * @return Vector<float, N_x>&
+     */
+    Vector<float, N_x> &predict() {
+        // State Extrapolation
+        x = A * x;
+
+        // Covariance Extrapolation
+        P = A * P * A.transpose() + Q;
+        return x;
+    }
 
     /**
      * @brief State Extrapolation
      */
-    void update(Vector<float, N_z> z);
+    void update(Vector<float, N_z> z) {
+        // Kalman Gain
+        Matrix<float, N_x, N_z> m1 = P * H.transpose();
+        K = m1 * (H * m1 + R).inverse();
+
+        // Covariance Update
+        Matrix<float, N_x, N_x> m2 = I - K * H;
+        Matrix<float, N_x, N_x> m3 = m2 * P * m2.transpose();
+        P = m3 + K * R * K.transpose();
+
+        // State Update
+        x = x + K * (z - H * x);
+    }
+
+    void printState() {
+        log_info << x.transpose() << "\n";
+        log_info << std::endl;
+    }
+
+    void printEstimateCovariance() {
+        for (uint8_t r = 0; r < P.rows(); r++) log_info << P.row(r) << "\n";
+        log_info << std::endl;
+    }
+
+    void printKalmanGain() {
+        for (uint8_t r = 0; r < K.rows(); r++) log_info << K.row(r) << "\n";
+        log_info << std::endl;
+    }
 
 private:
     /**
@@ -57,7 +104,7 @@ private:
     /**
      * @brief Measurements Vector
      */
-    Vector<float, N_z> z = Vector<float, N_z>::Zero();
+    // Vector<float, N_z> z = Vector<float, N_z>::Zero();
 
     /**
      * @brief State Transition Matrix
@@ -67,7 +114,7 @@ private:
     /**
      * @brief Input Variable
      */
-    Vector<float, N_u> u = Vector<float, N_u>::Zero();
+    // Vector<float, N_u> u = Vector<float, N_u>::Zero();
 
     /**
      * @brief Control Matrix
@@ -88,16 +135,6 @@ private:
      * @brief Measurement Covariance
      */
     Matrix<float, N_z, N_z> R = Matrix<float, N_z, N_z>::Zero();
-
-    /**
-     * @brief Process Noise Vector
-     */
-    Vector<float, N_x> w = Vector<float, N_x>::Zero();
-
-    /**
-     * @brief Measurement Noise Vector
-     */
-    Vector<float, N_z> v = Vector<float, N_z>::Zero();
 
     /**
      * @brief Observation Matrix

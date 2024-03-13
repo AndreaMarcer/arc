@@ -4,7 +4,6 @@ include_directories(${CMAKE_SOURCE_DIR}/external/eigen/)
 set(SRCS 
 src/main.cpp
 src/sensors/MPU6050.cpp
-src/control/kalman.cpp
 )
 
 set(HEADERS 
