@@ -47,19 +47,21 @@ int main() {
     log_info << "=======================\n";
 
     MPU6050 mpu6050{i2c_default, MPU6050::I2C_ADDR_AD0_LOW};
-    mpu6050.setDLPFConfig(MPU6050::DlpfBW::_184Hz);
-    mpu6050.setAccRange(MPU6050::AccRange::_2G);
+    mpu6050.setDLPFConfig(MPU6050::DlpfBW::_260Hz);
+    mpu6050.setAccRange(MPU6050::AccRange::_4G);
+    mpu6050.setGyroRange(MPU6050::GyroRange::_500);
     // mpu6050.enableInterrupt();
     mpu6050.wake();
 
     sleep_ms(100);
 
-    Vector<float, 3> acc;
-    Vector<float, 3> gyro;
+    int n = 5000;
+    Vector<float, 3> acc[n];
+    Vector<float, 3> gyro[n];
+    uint64_t timestamp[n];
 
     // uint8_t tmp;
-    Stopwatch stopwatch;
-    while (0) {
+    for (size_t i = 0; i < n; i++) {
         // mpu6050.getInterruptStatus(tmp);
 
         // gpio_set_dormant_irq_enabled(
@@ -67,16 +69,16 @@ int main() {
 
         // xosc_dormant();
 
-        stopwatch.start();
-        mpu6050.getAcc(acc);
-        mpu6050.getGyro(gyro);
-        stopwatch.stop().print().reset();
-        log_info << acc.transpose() << "\t|.| = " << acc.squaredNorm() << "\n";
-        log_info << gyro.transpose() << "\n";
-
-        sleep_ms(5000);
+        mpu6050.getAcc(acc[i]);
+        mpu6050.getGyro(gyro[i]);
+        timestamp[i] = time_us_64();
     }
-
+    for (size_t i = 0; i < n; i++) {
+        std::cout << timestamp[i] << "," << acc[i].x() << "," << acc[i].y()
+                  << "," << acc[i].z() << "," << gyro[i].x() << ","
+                  << gyro[i].y() << "," << gyro[i].z() << "\n";
+    }
+    return 0;
     // clang-format off
     Matrix<float, 6, 6> A;
     A << 1.0, 1.0, 0.5, 0.0, 0.0, 0.0,
