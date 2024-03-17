@@ -141,6 +141,32 @@ struct I2C {
      * @brief
      *
      * @param addr
+     * @param data
+     * @param len
+     * @return int
+     */
+    inline int writeWords(uint8_t addr, uint16_t *data, uint8_t len = 1) {
+        uint8_t num_bytes = len * 2 + 1;
+        uint8_t buf[num_bytes];
+
+        buf[0] = addr;
+        for (int i = 0; i < len; i++) {
+            buf[i * 2 + 1] = data[i] >> 8;
+            buf[i * 2 + 2] = data[i];
+        }
+
+        int ret = writeBytes(buf, num_bytes);
+        if (ret != num_bytes) {
+            log_error << "Error in writeBytes()\n";
+            return EIO;
+        }
+        return (num_bytes - 1) / 2;
+    }
+
+    /**
+     * @brief
+     *
+     * @param addr
      * @param mask
      * @param offset
      * @param value
