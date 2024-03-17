@@ -719,21 +719,18 @@ int MPU6050::calibrateGyro() {
     return 0;
 }
 
-int MPU6050::setGyroOffset(int16_t offsets[3]) {
+int MPU6050::setGyroOffset(int16_t *offsets) {
     int ret = 0;
-    uint8_t data[7];
-    int16_t scaled_offset;
-    data[0] = XG_OFFS_USRH_ADDR;
+
+    uint16_t scaled_offsets[3];
     for (uint8_t i = 0; i < 3; i++) {
-        scaled_offset =
-            offsets[i] / 4;  // MPU6050 expects the offset scaled by 4.
-        data[i * 2 + 1] = scaled_offset >> 8;
-        data[i * 2 + 2] = scaled_offset;
+        scaled_offsets[i] = offsets[i] / 4;
     }
-    ret = m_i2c.writeBytes(data, 7);
-    if (ret != 7) {
-        log_error << "Error in writeBytes(). (" << strerror(ret) << ")\n";
-        return ret;
+
+    ret = m_i2c.writeWords(XG_OFFS_USRH_ADDR, (uint16_t *)scaled_offsets, 3);
+    if (ret != 3) {
+        log_error << "Error in writeBytes()\n";
+        return EIO;
     }
     return 0;
 }
