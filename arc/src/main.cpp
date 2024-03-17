@@ -47,19 +47,22 @@ int main() {
     log_info << "=======================\n";
 
     MPU6050 mpu6050{i2c_default, MPU6050::I2C_ADDR_AD0_LOW};
-    mpu6050.setDLPFConfig(MPU6050::DlpfBW::_260Hz);
+    mpu6050.wake();
+
+    mpu6050.setDLPFConfig(MPU6050::DlpfBW::_184Hz);
     mpu6050.setAccRange(MPU6050::AccRange::_4G);
     mpu6050.setGyroRange(MPU6050::GyroRange::_500);
+    mpu6050.setClockSource(MPU6050::ClockSource::INTR_8MHZ);
+
     // mpu6050.enableInterrupt();
-    mpu6050.wake();
 
     sleep_ms(100);
 
-    int n = 5000;
+    int n = 10;
     Vector<float, 3> acc[n];
     Vector<float, 3> gyro[n];
     uint64_t timestamp[n];
-
+    Stopwatch s1;
     // uint8_t tmp;
     for (size_t i = 0; i < n; i++) {
         // mpu6050.getInterruptStatus(tmp);
@@ -68,9 +71,14 @@ int main() {
         //     9, IO_BANK0_DORMANT_WAKE_INTE0_GPIO0_EDGE_HIGH_BITS, true);
 
         // xosc_dormant();
-
+        s1.start();
         mpu6050.getAcc(acc[i]);
         mpu6050.getGyro(gyro[i]);
+        s1.stop().print().reset();
+
+        s1.start();
+        mpu6050.getAccGyro(acc[i], gyro[i]);
+        s1.stop().print().reset();
         timestamp[i] = time_us_64();
     }
     for (size_t i = 0; i < n; i++) {

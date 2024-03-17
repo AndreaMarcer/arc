@@ -7,12 +7,13 @@ src/sensors/MPU6050.cpp
 )
 
 set(HEADERS 
-include/arc/sensors/MPU6050.hpp
-include/arc/common/constants.hpp
 include/arc/common/common.hpp
-include/arc/common/stopwatch.hpp
+include/arc/common/constants.hpp
+include/arc/common/i2c.hpp
 include/arc/common/log.hpp
+include/arc/common/stopwatch.hpp
 include/arc/control/kalman.hpp
+include/arc/sensors/MPU6050.hpp
 )
 
 add_executable(arc ${SRCS} ${HEADERS})
