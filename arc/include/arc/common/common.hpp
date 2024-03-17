@@ -27,10 +27,12 @@ using namespace std;
 #define HEX2STR(num, w) \
     uppercase << setfill('0') << setw(w) << hex << num << dec
 
-#define MULTILINE_DEFINE_BEGINE do {
+#define MULTILINE_DEFINE_BEGIN do {
 #define MULTILINE_DEFINE_END \
     }                        \
     while (0)
+
+#define BIT(n) (1 << n)
 
 /*****************************************************************************\
 |                                    COMMON                                   |
