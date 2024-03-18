@@ -88,12 +88,12 @@ public:
     static constexpr uint8_t YA_TEST_1_0_BITS = 0x0C;
     static constexpr uint8_t ZA_TEST_1_0_BITS = 0x02;
 
-    static constexpr uint8_t XG_OFFS_USRH_ADDR = 0x13;
-    static constexpr uint8_t XG_OFFS_USRL_ADDR = 0x14;
-    static constexpr uint8_t YG_OFFS_USRH_ADDR = 0x15;
-    static constexpr uint8_t YG_OFFS_USRL_ADDR = 0x16;
-    static constexpr uint8_t ZG_OFFS_USRH_ADDR = 0x17;
-    static constexpr uint8_t ZG_OFFS_USRL_ADDR = 0x18;
+    static constexpr uint8_t XG_OFFS_H_ADDR = 0x13;
+    static constexpr uint8_t XG_OFFS_L_ADDR = 0x14;
+    static constexpr uint8_t YG_OFFS_H_ADDR = 0x15;
+    static constexpr uint8_t YG_OFFS_L_ADDR = 0x16;
+    static constexpr uint8_t ZG_OFFS_H_ADDR = 0x17;
+    static constexpr uint8_t ZG_OFFS_L_ADDR = 0x18;
 
     static constexpr uint8_t SMPLRT_DIV_ADDR = 0x19;
 
@@ -382,6 +382,7 @@ public:
     int getAccRange(AccRange &);
     int enableAccSelfTest();
     int disableAccSelfTest();
+    int setAccOffset(int16_t[3]);
 
     inline int getRawGyro(Eigen::Vector<int16_t, 3> &);
     inline int getGyro(Eigen::Vector<float, 3> &);
