@@ -64,12 +64,12 @@ public:
     static constexpr uint8_t Y_FINE_GAIN_ADDR   = 0x04;
     static constexpr uint8_t Z_FINE_GAIN_ADDR   = 0x05;
 
-    static constexpr uint8_t XA_OFFS_H_ADDR     = 0x06;
-    static constexpr uint8_t XA_OFFS_L_TC_ADDR  = 0x07;
-    static constexpr uint8_t YA_OFFS_H_ADDR     = 0x08;
-    static constexpr uint8_t YA_OFFS_L_TC_ADDR  = 0x09;
-    static constexpr uint8_t ZA_OFFS_H_ADDR     = 0x0A;
-    static constexpr uint8_t ZA_OFFS_L_TC_ADDR  = 0x0B;
+    static constexpr uint8_t XA_OFFS_H_ADDR = 0x06;
+    static constexpr uint8_t XA_OFFS_L_ADDR = 0x07;
+    static constexpr uint8_t YA_OFFS_H_ADDR = 0x08;
+    static constexpr uint8_t YA_OFFS_L_ADDR = 0x09;
+    static constexpr uint8_t ZA_OFFS_H_ADDR = 0x0A;
+    static constexpr uint8_t ZA_OFFS_L_ADDR = 0x0B;
 
     static constexpr uint8_t TEST_X_ADDR      = 0x0D;
     static constexpr uint8_t XA_TEST_4_2_BITS = 0xE0;
@@ -376,13 +376,14 @@ public:
 
     MPU6050(i2c_inst_t *i2c_inst, uint8_t address);
 
-    inline int getRawAcc(Eigen::Vector<int16_t, 3> &);
     inline int getAcc(Eigen::Vector<float, 3> &);
+    inline int getRawAcc(Eigen::Vector<int16_t, 3> &);
     int setAccRange(AccRange);
     int getAccRange(AccRange &);
     int enableAccSelfTest();
     int disableAccSelfTest();
     int setAccOffset(int16_t[3]);
+    int getAccOffset(int16_t[3]);
 
     inline int getRawGyro(Eigen::Vector<int16_t, 3> &);
     inline int getGyro(Eigen::Vector<float, 3> &);
@@ -394,6 +395,7 @@ public:
     void setGyroDeg();
     int calibrateGyro();
     int setGyroOffset(int16_t[3]);
+    int getGyroOffset(int16_t[3]);
 
     inline int getAccGyro(Eigen::Vector<float, 3> &, Eigen::Vector<float, 3> &);
 
@@ -416,6 +418,7 @@ public:
     int reset_paths();
     int sleep();
     int wake();
+    bool ok() { return !m_error; }
 
     /************************************************************************\
     |                               MEMBERS                                  |
@@ -429,11 +432,10 @@ private:
     float m_acc_scale{1.0};
 
     float m_gyro_scale{1.0};
-    Eigen::Vector<int16_t, 3> m_gyro_offset{};
     bool m_gyro_in_rad{false};
     bool m_gyro_calibrated{false};
 
-    bool m_self_test_fail{false};
+    bool m_error{false};
 };
 
 int MPU6050::getAcc(Eigen::Vector<float, 3> &accel) {

@@ -24,7 +24,7 @@
 /*****************************************************************************\
 |                                    MACROS                                   |
 \*****************************************************************************/
-#define MPU6050_GET_FUNC(FUNC_NAME, TYPE, ADDR, MASK, OFFSET)               \
+#define MPU6050_GET_ENUM_FUNC(FUNC_NAME, TYPE, ADDR, MASK, OFFSET)          \
     int MPU6050::get##FUNC_NAME(TYPE &value) {                              \
         int ret = 0;                                                        \
         uint8_t read_value;                                                 \
@@ -39,7 +39,7 @@
         return 0;                                                           \
     }
 
-#define MPU6050_SET_FUNC(FUNC_NAME, TYPE, ADDR, MASK, OFFSET)                 \
+#define MPU6050_SET_ENUM_FUNC(FUNC_NAME, TYPE, ADDR, MASK, OFFSET)            \
     int MPU6050::set##FUNC_NAME(TYPE value) {                                 \
         int ret = 0;                                                          \
         log_debug << "set" #FUNC_NAME ": " << static_cast<uint>(value)        \
@@ -111,14 +111,24 @@ MPU6050::MPU6050(i2c_inst_t *i2c_inst, uint8_t address)
     }
 
     selfTest();
-    if (!m_self_test_fail) {
+    if (!m_error) {
         calibrateGyro();
     }
     sleep();
 }
 
-MPU6050_GET_FUNC(AccRange, AccRange, ACC_CONF_ADDR, ACC_RANGE_BITS,
-                 ACC_RANGE_OFFSET)
+MPU6050_GET_ENUM_FUNC(DLPFConfig, DlpfBW, CONFIG_ADDR, DLPF_CFG_BITS,
+                      DLPF_CFG_OFFSET)
+MPU6050_SET_ENUM_FUNC(DLPFConfig, DlpfBW, CONFIG_ADDR, DLPF_CFG_BITS,
+                      DLPF_CFG_OFFSET)
+
+MPU6050_GET_ENUM_FUNC(ClockSource, ClockSource, PWR_MGMT_1_ADDR, CLK_SEL_BITS,
+                      CLK_SEL_OFFSET)
+MPU6050_SET_ENUM_FUNC(ClockSource, ClockSource, PWR_MGMT_1_ADDR, CLK_SEL_BITS,
+                      CLK_SEL_OFFSET)
+
+MPU6050_GET_ENUM_FUNC(AccRange, AccRange, ACC_CONF_ADDR, ACC_RANGE_BITS,
+                      ACC_RANGE_OFFSET)
 
 int MPU6050::setAccRange(AccRange range) {
     int ret = 0;
@@ -172,8 +182,8 @@ int MPU6050::setAccRange(AccRange range) {
     return 0;
 }
 
-MPU6050_GET_FUNC(GyroRange, GyroRange, GYRO_CONF_ADDR, GYRO_RANGE_BITS,
-                 GYRO_RANGE_OFFSET)
+MPU6050_GET_ENUM_FUNC(GyroRange, GyroRange, GYRO_CONF_ADDR, GYRO_RANGE_BITS,
+                      GYRO_RANGE_OFFSET)
 
 int MPU6050::setGyroRange(GyroRange range) {
     int ret = 0;
@@ -278,7 +288,7 @@ int MPU6050::selfTest() {
         log_error << "Error in accSelfTest(). (" << strerror(ret) << ")\n";
         return ret;
     }
-    if (m_self_test_fail) {
+    if (m_error) {
         log_critical << "Accelerometer Self Test failed\n";
         return 0;
     }
@@ -288,7 +298,7 @@ int MPU6050::selfTest() {
         log_error << "Error in gyroSelfTest(). (" << strerror(ret) << ")\n";
         return ret;
     }
-    if (m_self_test_fail) {
+    if (m_error) {
         log_critical << "Accelerometer Self Test failed\n";
     }
 
@@ -383,7 +393,7 @@ int MPU6050::accSelfTest() {
                  << "] => FAILED" << std::endl;
 
 FAIL:
-    m_self_test_fail = true;
+    m_error = true;
     return ret;
 }
 
@@ -469,7 +479,7 @@ int MPU6050::gyroSelfTest() {
                  << ", " << gyro_self_test[1] << ", " << gyro_self_test[2]
                  << "] => FAILED" << std::endl;
 FAIL:
-    m_self_test_fail = true;
+    m_error = true;
     return ret;
 }
 
@@ -679,6 +689,7 @@ int MPU6050::calibrateGyro() {
     }
     log_debug_s << std::endl;
 
+    log_debug << "Gyro STD: ";
     uint64_t gyro_sum_squared[3] = {0};
     for (uint16_t i = 0; i < GYRO_CALIB_SAMPLES; i++) {
         for (uint8_t j = 0; j < 3; j++) {
@@ -687,7 +698,6 @@ int MPU6050::calibrateGyro() {
         }
     }
 
-    log_debug << "Gyro STD: ";
     uint64_t gyro_std[3] = {0};
     for (uint8_t j = 0; j < 3; j++) {
         gyro_std[j] = gyro_sum_squared[j] / (GYRO_CALIB_SAMPLES - 1);
@@ -708,8 +718,7 @@ int MPU6050::calibrateGyro() {
     log_debug << "Gyro Offset: ";
     for (uint8_t j = 0; j < 3; j++) {
         log_debug_s << -gyro_mean[j] << ", ";
-        m_gyro_offset[j] = -gyro_mean[j];
-        gyro_offset[j] = -gyro_mean[j];
+        gyro_offset[j] = -gyro_mean[j] / 4;
     }
     log_debug_s << std::endl;
 
@@ -719,15 +728,8 @@ int MPU6050::calibrateGyro() {
     return 0;
 }
 
-int MPU6050::setAccOffset(int16_t *offsets) {
-    int ret = 0;
-
-    uint16_t scaled_offsets[3];
-    for (uint8_t i = 0; i < 3; i++) {
-        scaled_offsets[i] = offsets[i];
-    }
-
-    ret = m_i2c.writeWords(XA_OFFS_H_ADDR, (uint16_t *)scaled_offsets, 3);
+int MPU6050::setAccOffset(int16_t offsets[3]) {
+    int ret = m_i2c.writeWords(XA_OFFS_H_ADDR, (uint16_t *)offsets, 3);
     if (ret != 3) {
         log_error << "Error in writeBytes()\n";
         return EIO;
@@ -735,17 +737,28 @@ int MPU6050::setAccOffset(int16_t *offsets) {
     return 0;
 }
 
-int MPU6050::setGyroOffset(int16_t *offsets) {
-    int ret = 0;
-
-    uint16_t scaled_offsets[3];
-    for (uint8_t i = 0; i < 3; i++) {
-        scaled_offsets[i] = offsets[i] / 4;
+int MPU6050::getAccOffset(int16_t offsets[3]) {
+    int ret = m_i2c.readWords(XA_OFFS_H_ADDR, (uint16_t *)offsets, 3);
+    if (ret != 3) {
+        log_error << "Error in readWords()\n";
+        return EIO;
     }
+    return 0;
+}
 
-    ret = m_i2c.writeWords(XG_OFFS_H_ADDR, (uint16_t *)scaled_offsets, 3);
+int MPU6050::setGyroOffset(int16_t offsets[3]) {
+    int ret = m_i2c.writeWords(XG_OFFS_H_ADDR, (uint16_t *)offsets, 3);
     if (ret != 3) {
         log_error << "Error in writeBytes()\n";
+        return EIO;
+    }
+    return 0;
+}
+
+int MPU6050::getGyroOffset(int16_t offsets[3]) {
+    int ret = m_i2c.readWords(XG_OFFS_H_ADDR, (uint16_t *)offsets, 3);
+    if (ret != 3) {
+        log_error << "Error in readWords()\n";
         return EIO;
     }
     return 0;
@@ -767,15 +780,5 @@ int MPU6050::dumpMemory(uint8_t start, uint8_t end) {
     }
     return 0;
 }
-
-MPU6050_GET_FUNC(DLPFConfig, DlpfBW, CONFIG_ADDR, DLPF_CFG_BITS,
-                 DLPF_CFG_OFFSET)
-MPU6050_SET_FUNC(DLPFConfig, DlpfBW, CONFIG_ADDR, DLPF_CFG_BITS,
-                 DLPF_CFG_OFFSET)
-
-MPU6050_GET_FUNC(ClockSource, ClockSource, PWR_MGMT_1_ADDR, CLK_SEL_BITS,
-                 CLK_SEL_OFFSET)
-MPU6050_SET_FUNC(ClockSource, ClockSource, PWR_MGMT_1_ADDR, CLK_SEL_BITS,
-                 CLK_SEL_OFFSET)
 
 }  // namespace arc::sensors
