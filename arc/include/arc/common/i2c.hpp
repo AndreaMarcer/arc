@@ -45,7 +45,7 @@ struct I2C {
      * @return int Number of bytes written, or PICO_ERROR_GENERIC if address not
      * acknowledged, no device present.
      */
-    inline int writeBytes(uint8_t *data, uint8_t len = 1) {
+    inline int writeBytes(uint8_t *data, const uint8_t len = 1) {
         return i2c_write_blocking(m_i2c_inst, m_dev_addr, data, len, false);
     }
 
@@ -57,7 +57,8 @@ struct I2C {
      * @param mask
      * @return int
      */
-    inline int writeBits(uint8_t addr, uint8_t data, uint8_t mask) {
+    inline int writeBits(const uint8_t addr, const uint8_t data,
+                         const uint8_t mask) {
         int ret = 0;
 
         uint8_t curr_byte;
@@ -90,7 +91,7 @@ struct I2C {
      * @param mask
      * @return int
      */
-    inline int setBits(uint8_t addr, uint8_t mask) {
+    inline int setBits(const uint8_t addr, const uint8_t mask) {
         return writeBits(addr, 1, mask);
     }
 
@@ -101,7 +102,7 @@ struct I2C {
      * @param mask
      * @return int
      */
-    inline int unsetBits(uint8_t addr, uint8_t mask) {
+    inline int unsetBits(const uint8_t addr, const uint8_t mask) {
         return writeBits(addr, 0, mask);
     }
 
@@ -114,8 +115,8 @@ struct I2C {
      * @param offset
      * @return int
      */
-    inline int writeBits(uint8_t addr, uint8_t data, uint8_t mask,
-                         uint8_t offset) {
+    inline int writeBits(const uint8_t addr, const uint8_t data,
+                         const uint8_t mask, const uint8_t offset) {
         int ret = 0;
 
         uint8_t curr_byte;
@@ -145,7 +146,8 @@ struct I2C {
      * @param len
      * @return int
      */
-    inline int writeWords(uint8_t addr, uint16_t *data, uint8_t len = 1) {
+    inline int writeWords(const uint8_t addr, uint16_t *data,
+                          const uint8_t len = 1) {
         uint8_t num_bytes = len * 2 + 1;
         uint8_t buf[num_bytes];
 
@@ -172,8 +174,8 @@ struct I2C {
      * @param value
      * @return int
      */
-    inline int readBits(uint8_t addr, uint8_t mask, uint8_t offset,
-                        uint8_t &value) {
+    inline int readBits(const uint8_t addr, const uint8_t mask,
+                        const uint8_t offset, uint8_t &value) {
         int ret = 0;
 
         uint8_t byte;
@@ -196,9 +198,31 @@ struct I2C {
      * @return int Number of bytes read, or PICO_ERROR_GENERIC if address not
      * acknowledged or no device present.
      */
-    inline int readBytes(uint8_t reg_addr, uint8_t *buf, uint8_t len = 1) {
+    inline int readBytes(const uint8_t reg_addr, uint8_t *buf,
+                         const uint8_t len = 1) {
         i2c_write_blocking(m_i2c_inst, m_dev_addr, &reg_addr, 1, true);
         return i2c_read_blocking(m_i2c_inst, m_dev_addr, buf, len, false);
+    }
+
+    inline int readWords(const uint8_t reg_addr, uint16_t *buf,
+                         const uint8_t len = 1) {
+        i2c_write_blocking(m_i2c_inst, m_dev_addr, &reg_addr, 1, true);
+
+        uint8_t num_bytes = len * 2;
+        uint8_t buf_bytes[num_bytes];
+
+        int ret = i2c_read_blocking(m_i2c_inst, m_dev_addr, buf_bytes,
+                                    num_bytes, false);
+        if (ret != num_bytes) {
+            log_error << "Error in readBytes().\n";
+            return 0;
+        }
+
+        for (uint8_t i = 0; i < len; i++) {
+            buf[i] = (buf_bytes[i * 2] << 8) | (buf_bytes[i * 2 + 1]);
+        }
+
+        return ret / 2;
     }
 };
 
