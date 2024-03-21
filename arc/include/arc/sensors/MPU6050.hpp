@@ -398,6 +398,7 @@ public:
     int getGyroOffset(int16_t[3]);
 
     inline int getAccGyro(Eigen::Vector<float, 3> &, Eigen::Vector<float, 3> &);
+    inline int getRawAccGyro(Eigen::Vector<int16_t, 3> &, Eigen::Vector<int16_t, 3> &);
 
     int getDLPFConfig(DlpfBW &);
     int setDLPFConfig(DlpfBW);
@@ -514,6 +515,26 @@ int MPU6050::getAccGyro(Eigen::Vector<float, 3> &accel,
     gyro.x() = (static_cast<int16_t>((buf[8] << 8) | buf[9])) * m_gyro_scale;
     gyro.y() = (static_cast<int16_t>((buf[10] << 8) | buf[11])) * m_gyro_scale;
     gyro.z() = (static_cast<int16_t>((buf[12] << 8) | buf[13])) * m_gyro_scale;
+
+    return 0;
+}
+
+int MPU6050::getRawAccGyro(Eigen::Vector<int16_t, 3> &accel,
+                        Eigen::Vector<int16_t, 3> &gyro) {
+    uint8_t buf[14];
+    int ret = m_i2c.readBytes(ACC_X_H_ADDR, buf, 14);
+    if (ret != 14) {
+        log_error << "Error in readBytes().\n";
+        return EIO;
+    }
+
+    accel.x() = static_cast<int16_t>((buf[0] << 8) | buf[1]);
+    accel.y() = static_cast<int16_t>((buf[2] << 8) | buf[3]);
+    accel.z() = static_cast<int16_t>((buf[4] << 8) | buf[5]);
+
+    gyro.x() = (static_cast<int16_t>((buf[8] << 8) | buf[9]));
+    gyro.y() = (static_cast<int16_t>((buf[10] << 8) | buf[11]));
+    gyro.z() = (static_cast<int16_t>((buf[12] << 8) | buf[13]));
 
     return 0;
 }
