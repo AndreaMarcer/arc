@@ -27,3 +27,4 @@ add_compile_definitions(LOG_DEBUG LOG_LEVEL=3 LOG_COLOR)
 
 # Include project
 add_subdirectory(arc)
+add_subdirectory(tools/IMU)
