@@ -100,20 +100,6 @@ MPU6050::MPU6050(i2c_inst_t *i2c_inst, uint8_t address)
         log_error << "Error in setClockSource(). (" << strerror(ret) << ")\n";
     }
 
-    ret = setAccRange(AccRange::_8G);
-    if (ret != 0) {
-        log_error << "Error in setAccRange(). (" << strerror(ret) << ")\n";
-    }
-
-    ret = setGyroRange(GyroRange::_250);
-    if (ret != 0) {
-        log_error << "Error in setGyroRange(). (" << strerror(ret) << ")\n";
-    }
-
-    selfTest();
-    if (!m_error) {
-        calibrateGyro();
-    }
     sleep();
 }
 
@@ -317,6 +303,11 @@ int MPU6050::accSelfTest() {
 
     int ret = 0;
 
+    ret = setAccRange(AccRange::_8G);
+    if (ret != 0) {
+        log_error << "Error in setAccRange(). (" << strerror(ret) << ")\n";
+    }
+
     ret = m_i2c.readBytes(TEST_X_ADDR, buf, 4);
     if (ret != 4) {
         log_error << "Error in readBytes().\n";
@@ -407,6 +398,12 @@ int MPU6050::gyroSelfTest() {
     int32_t selftest_response[3] = {0};
 
     int ret = 0;
+
+    ret = setGyroRange(GyroRange::_250);
+    if (ret != 0) {
+        log_error << "Error in setGyroRange(). (" << strerror(ret) << ")\n";
+    }
+
     ret = m_i2c.readBytes(TEST_X_ADDR, buf, 4);
     if (ret != 4) {
         log_error << "Error in readBytes().\n";
@@ -728,7 +725,7 @@ int MPU6050::calibrateGyro() {
     return 0;
 }
 
-int MPU6050::setAccOffset(int16_t offsets[3]) {
+int MPU6050::setAccOffset(const int16_t offsets[3]) {
     int ret = m_i2c.writeWords(XA_OFFS_H_ADDR, (uint16_t *)offsets, 3);
     if (ret != 3) {
         log_error << "Error in writeBytes()\n";
@@ -746,7 +743,7 @@ int MPU6050::getAccOffset(int16_t offsets[3]) {
     return 0;
 }
 
-int MPU6050::setGyroOffset(int16_t offsets[3]) {
+int MPU6050::setGyroOffset(const int16_t offsets[3]) {
     int ret = m_i2c.writeWords(XG_OFFS_H_ADDR, (uint16_t *)offsets, 3);
     if (ret != 3) {
         log_error << "Error in writeBytes()\n";

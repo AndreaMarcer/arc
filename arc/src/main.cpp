@@ -15,9 +15,6 @@
 #include <stdio.h>
 #include <iostream>
 
-#include "hardware/i2c.h"
-#include "hardware/gpio.h"
-#include "hardware/xosc.h"
 #include "math.h"
 #include "pico/stdlib.h"
 
@@ -26,6 +23,13 @@
 #include "common/stopwatch.hpp"
 #include "control/kalman.hpp"
 #include "sensors/MPU6050.hpp"
+
+/*****************************************************************************\
+|                                    MACRO                                    |
+\*****************************************************************************/
+
+#define I2C_SDA_PIN 20
+#define I2C_SCL_PIN 21
 
 /*****************************************************************************\
 |                                     MAIN                                    |
@@ -39,53 +43,75 @@ int main() {
     stdio_init_all();
 
     i2c_init(i2c_default, 400 * 1000);
-    gpio_set_function(PICO_DEFAULT_I2C_SDA_PIN, GPIO_FUNC_I2C);
-    gpio_set_function(PICO_DEFAULT_I2C_SCL_PIN, GPIO_FUNC_I2C);
-    gpio_pull_up(PICO_DEFAULT_I2C_SDA_PIN);
-    gpio_pull_up(PICO_DEFAULT_I2C_SCL_PIN);
+    gpio_set_function(I2C_SDA_PIN, GPIO_FUNC_I2C);
+    gpio_set_function(I2C_SCL_PIN, GPIO_FUNC_I2C);
+    gpio_pull_up(I2C_SDA_PIN);
+    gpio_pull_up(I2C_SCL_PIN);
 
-    log_info << "=======================\n";
+    log_info << "================================================\n";
 
-    MPU6050 mpu6050{i2c_default, MPU6050::I2C_ADDR_AD0_LOW};
-    mpu6050.wake();
+    MPU6050 mpu6050_1{i2c_default, MPU6050::I2C_ADDR_AD0_LOW};
+    // MPU6050 mpu6050_2{i2c_default, MPU6050::I2C_ADDR_AD0_HIGH};
 
-    mpu6050.setDLPFConfig(MPU6050::DlpfBW::_184Hz);
-    mpu6050.setAccRange(MPU6050::AccRange::_4G);
-    mpu6050.setGyroRange(MPU6050::GyroRange::_500);
-    mpu6050.setClockSource(MPU6050::ClockSource::INTR_8MHZ);
+    mpu6050_1.wake();
+    mpu6050_1.selfTest();
+    if (mpu6050_1.ok()) {
+        // mpu6050_1.calibrateGyro();
+    } else {
+        return 0;
+    }
 
-    // mpu6050.enableInterrupt();
+    mpu6050_1.setDLPFConfig(MPU6050::DlpfBW::_260Hz);
+    mpu6050_1.setAccRange(MPU6050::AccRange::_4G);
+    mpu6050_1.setGyroRange(MPU6050::GyroRange::_500);
+    mpu6050_1.setClockSource(MPU6050::ClockSource::PLL_GYROX);
+
+    int16_t acc_offset[3] = {-4709, -903, 866};
+    mpu6050_1.setAccOffset(acc_offset);
+    int16_t gyro_offset[3] = {334, 21, -7};
+    mpu6050_1.setGyroOffset(gyro_offset);
+
+    // mpu6050_2.wake();
+    // mpu6050_2.setDLPFConfig(MPU6050::DlpfBW::_260Hz);
+    // mpu6050_2.setAccRange(MPU6050::AccRange::_4G);
+    // mpu6050_2.setGyroRange(MPU6050::GyroRange::_500);
+    // mpu6050_2.setClockSource(MPU6050::ClockSource::PLL_GYROX);
 
     sleep_ms(100);
 
-    int n = 10;
-    Vector<float, 3> acc[n];
-    Vector<float, 3> gyro[n];
-    uint64_t timestamp[n];
-    Stopwatch s1;
-    // uint8_t tmp;
+    log_info << "\n";
+    log_info << "START\n";
+    log_info << "\n";
+
+    sleep_ms(1000);
+
+    int n = 1000;
+    Vector<float, 3> acc_1[n];
+    Vector<float, 3> gyro_1[n];
+    uint64_t timestamp_1[n];
+    Vector<float, 3> acc_2[n];
+    Vector<float, 3> gyro_2[n];
+    uint64_t timestamp_2[n];
+
     for (size_t i = 0; i < n; i++) {
-        // mpu6050.getInterruptStatus(tmp);
-
-        // gpio_set_dormant_irq_enabled(
-        //     9, IO_BANK0_DORMANT_WAKE_INTE0_GPIO0_EDGE_HIGH_BITS, true);
-
-        // xosc_dormant();
-        s1.start();
-        mpu6050.getAcc(acc[i]);
-        mpu6050.getGyro(gyro[i]);
-        s1.stop().print().reset();
-
-        s1.start();
-        mpu6050.getAccGyro(acc[i], gyro[i]);
-        s1.stop().print().reset();
-        timestamp[i] = time_us_64();
+        mpu6050_1.getAccGyro(acc_1[i], gyro_1[i]);
+        timestamp_1[i] = time_us_64();
+        // mpu6050_2.getAccGyro(acc_2[i], gyro_2[i]);
+        // timestamp_2[i] = time_us_64();
+        sleep_ms(10);
     }
     for (size_t i = 0; i < n; i++) {
-        std::cout << timestamp[i] << "," << acc[i].x() << "," << acc[i].y()
-                  << "," << acc[i].z() << "," << gyro[i].x() << ","
-                  << gyro[i].y() << "," << gyro[i].z() << "\n";
+        std::cout << timestamp_1[i] << "," << acc_1[i].x() << ","
+                  << acc_1[i].y() << "," << acc_1[i].z() << "," << gyro_1[i].x()
+                  << "," << gyro_1[i].y() << "," << gyro_1[i].z() << "\n";
     }
+    // std::cout << "SECOND\n";
+    // for (size_t i = 0; i < n; i++) {
+    //     std::cout << timestamp_2[i] << "," << acc_2[i].x() << ","
+    //               << acc_2[i].y() << "," << acc_2[i].z() << "," <<
+    //               gyro_2[i].x()
+    //               << "," << gyro_2[i].y() << "," << gyro_2[i].z() << "\n";
+    // }
     return 0;
     // clang-format off
     Matrix<float, 6, 6> A;

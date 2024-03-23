@@ -382,7 +382,7 @@ public:
     int getAccRange(AccRange &);
     int enableAccSelfTest();
     int disableAccSelfTest();
-    int setAccOffset(int16_t[3]);
+    int setAccOffset(const int16_t[3]);
     int getAccOffset(int16_t[3]);
 
     inline int getRawGyro(Eigen::Vector<int16_t, 3> &);
@@ -394,11 +394,12 @@ public:
     void setGyroRad();
     void setGyroDeg();
     int calibrateGyro();
-    int setGyroOffset(int16_t[3]);
+    int setGyroOffset(const int16_t[3]);
     int getGyroOffset(int16_t[3]);
 
     inline int getAccGyro(Eigen::Vector<float, 3> &, Eigen::Vector<float, 3> &);
-    inline int getRawAccGyro(Eigen::Vector<int16_t, 3> &, Eigen::Vector<int16_t, 3> &);
+    inline int getRawAccGyro(Eigen::Vector<int16_t, 3> &,
+                             Eigen::Vector<int16_t, 3> &);
 
     int getDLPFConfig(DlpfBW &);
     int setDLPFConfig(DlpfBW);
@@ -520,7 +521,7 @@ int MPU6050::getAccGyro(Eigen::Vector<float, 3> &accel,
 }
 
 int MPU6050::getRawAccGyro(Eigen::Vector<int16_t, 3> &accel,
-                        Eigen::Vector<int16_t, 3> &gyro) {
+                           Eigen::Vector<int16_t, 3> &gyro) {
     uint8_t buf[14];
     int ret = m_i2c.readBytes(ACC_X_H_ADDR, buf, 14);
     if (ret != 14) {
