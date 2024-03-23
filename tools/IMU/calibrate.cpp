@@ -29,11 +29,14 @@
 |                                    MACRO                                    |
 \*****************************************************************************/
 static constexpr uint32_t NUM_SAMPLES = 100;
-static constexpr uint32_t NUM_RUNS = 1;
-static constexpr uint32_t MS_BETWEEN_SAMPLES = 50;
+static constexpr uint32_t NUM_RUNS = 25;
+static constexpr uint32_t MS_BETWEEN_SAMPLES = 25;
 static constexpr uint32_t MS_PER_ACQUISITION = NUM_SAMPLES * MS_BETWEEN_SAMPLES;
-static constexpr double ACC_STD_TRH = 10.0;
-static constexpr double GYRO_STD_TRH = 2.0;
+static constexpr double ACC_STD_TRH = 2.2;
+static constexpr double GYRO_STD_TRH = 0.43;
+
+#define I2C_SDA_PIN 20
+#define I2C_SCL_PIN 21
 
 /*****************************************************************************\
 |                                     MAIN                                    |
@@ -46,36 +49,64 @@ int main() {
     stdio_init_all();
 
     i2c_init(i2c_default, 400 * 1000);
-    gpio_set_function(PICO_DEFAULT_I2C_SDA_PIN, GPIO_FUNC_I2C);
-    gpio_set_function(PICO_DEFAULT_I2C_SCL_PIN, GPIO_FUNC_I2C);
-    gpio_pull_up(PICO_DEFAULT_I2C_SDA_PIN);
-    gpio_pull_up(PICO_DEFAULT_I2C_SCL_PIN);
+    gpio_set_function(I2C_SDA_PIN, GPIO_FUNC_I2C);
+    gpio_set_function(I2C_SCL_PIN, GPIO_FUNC_I2C);
+    gpio_pull_up(I2C_SDA_PIN);
+    gpio_pull_up(I2C_SCL_PIN);
 
     log_info << "================================================\n";
 
     MPU6050 mpu6050{i2c_default, MPU6050::I2C_ADDR_AD0_LOW};
 
     mpu6050.wake();
+    // mpu6050.selfTest();
+    // if (mpu6050.ok()) {
+    //     mpu6050.calibrateGyro();
+    // } else {
+    //     return 0;
+    // }
+
     mpu6050.setDLPFConfig(MPU6050::DlpfBW::_260Hz);
-    mpu6050.setAccRange(MPU6050::AccRange::_2G);
-    mpu6050.setGyroRange(MPU6050::GyroRange::_250);
+    mpu6050.setAccRange(MPU6050::AccRange::_8G);
+    mpu6050.setGyroRange(MPU6050::GyroRange::_1000);
     mpu6050.setClockSource(MPU6050::ClockSource::PLL_GYROX);
-    sleep_ms(100);
+
+    //
+    // INIT
+    //
+    int16_t orig_acc_offsets[3];
+    mpu6050.getAccOffset(orig_acc_offsets);
+    log_info << "orig_acc_offsets: " << orig_acc_offsets[0] << ", "
+             << orig_acc_offsets[1] << ", " << orig_acc_offsets[2] << std::endl;
+
+    int16_t orig_gyro_offsets[3];
+    mpu6050.getGyroOffset(orig_gyro_offsets);
+    log_info << "orig_gyro_offsets: " << orig_gyro_offsets[0] << ", "
+             << orig_gyro_offsets[1] << ", " << orig_gyro_offsets[2]
+             << std::endl;
+
+    int16_t acc_offset[3] = {-4709, -903, 866};
+    mpu6050.setAccOffset(acc_offset);
+
+    int16_t gyro_offset[3] = {334, 21, -7};
+    mpu6050.setGyroOffset(gyro_offset);
 
     int16_t curr_acc_offsets[3];
     mpu6050.getAccOffset(curr_acc_offsets);
-    log_info << "curr_acc_offset: " << curr_acc_offsets[0] << ", "
+    log_info << "acc_offset: " << curr_acc_offsets[0] << ", "
              << curr_acc_offsets[1] << ", " << curr_acc_offsets[2] << std::endl;
 
     int16_t curr_gyro_offsets[3];
     mpu6050.getGyroOffset(curr_gyro_offsets);
-    log_info << "curr_gyro_offset: " << curr_gyro_offsets[0] << ", "
+    log_info << "gyro_offset: " << curr_gyro_offsets[0] << ", "
              << curr_gyro_offsets[1] << ", " << curr_gyro_offsets[2]
              << std::endl;
 
     //
     // RUNS
     //
+    sleep_ms(100);
+
     Vector<int16_t, 3> acc[NUM_RUNS][NUM_SAMPLES];
     Vector<int16_t, 3> gyro[NUM_RUNS][NUM_SAMPLES];
     uint64_t timestamp[NUM_RUNS][NUM_SAMPLES];
@@ -84,7 +115,7 @@ int main() {
     uint32_t num_run = 0;
     log_info << "\n";
     while (!finished) {
-        log_info << "RUN [" << num_run << "]\n";
+        log_info << "RUN [" << num_run + 1 << " / " << NUM_RUNS << "]\n";
         log_info << " - Start";
         for (uint32_t i = 0; i < NUM_SAMPLES; i++) {
             mpu6050.getRawAccGyro(acc[num_run][i], gyro[num_run][i]);
@@ -105,8 +136,6 @@ int main() {
         }
         acc_mean /= NUM_SAMPLES;
         gyro_mean /= NUM_SAMPLES;
-        log_info << " - acc_mean: " << acc_mean.transpose() << "\n";
-        log_info << " - gyro_mean: " << gyro_mean.transpose() << "\n";
 
         //
         // STD
@@ -126,54 +155,49 @@ int main() {
         acc_std = acc_std.array().sqrt() / (NUM_SAMPLES - 1);
         gyro_std = gyro_std.array().sqrt() / (NUM_SAMPLES - 1);
 
-        log_info << " - acc_std: " << acc_std.transpose() << "\n";
-        log_info << " - gyro_std: " << gyro_std.transpose() << "\n";
-
         if ((acc_std.array() > ACC_STD_TRH).any()) {
+            log_info << " - acc_std: " << acc_std.transpose() << "\n";
             log_info << " - ACC STD toot high\n";
             continue;
         }
 
         if ((gyro_std.array() > GYRO_STD_TRH).any()) {
+            log_info << " - gyro_std: " << gyro_std.transpose() << "\n";
             log_info << " - GYRO STD toot high\n";
             continue;
         }
+
+        log_info << " - acc_mean: " << acc_mean.transpose() << "\n";
+        log_info << " - gyro_mean: " << gyro_mean.transpose() << "\n";
+        log_info << " - acc_std: " << acc_std.transpose() << "\n";
+        log_info << " - gyro_std: " << gyro_std.transpose() << "\n";
 
         num_run++;
         if (num_run == NUM_RUNS) finished = true;
     }
     log_info << " \n";
-    log_info << " CALIBRATION DONE \n";
+    log_info << " CALIBRATION DONE \n\n\n\n\n\n";
 
-    // for (size_t i = 0; i < n; i++) {
-    //     std::cout << timestamp_1[i] << "," << acc_1[i].x() << ","
-    //               << acc_1[i].y() << "," << acc_1[i].z() << "," <<
-    //               gyro_1[i].x()
-    //               << "," << gyro_1[i].y() << "," << gyro_1[i].z() << "\n";
-    // }
+    //
+    // PRINT
+    //
 
-    // int16_t offsets[3];
-    // mpu6050.getAccOffset(offsets);
+    mpu6050.getAccOffset(curr_acc_offsets);
+    mpu6050.getGyroOffset(curr_gyro_offsets);
+    std::cout << 0 << "," << curr_acc_offsets[0] << "," << curr_acc_offsets[1]
+              << "," << curr_acc_offsets[2] << "," << curr_gyro_offsets[0]
+              << "," << curr_gyro_offsets[1] << "," << curr_gyro_offsets[2]
+              << "\n";
 
-    // int16_t acc_offset[3] = {-4558, -949, 1040};
-    // mpu6050.setAccOffset(acc_offset);
-    // mpu6050.getAccOffset(offsets);
-    // log_info << offsets[0] << ", " << offsets[1] << ", " << offsets[2] << ",
-    // "
-    //          << std::endl;
-
-    // mpu6050.getGyroOffset(offsets);
-    // log_info << offsets[0] << ", " << offsets[1] << ", " << offsets[2] << ",
-    // "
-    //          << std::endl;
-
-    // int16_t acc_offset[3] = {  -42,   40,   48};
-    // int16_t acc_offset[3] = {-4558, -949, 1040};
-    //     mpu6050.dumpMemory(MPU6050::XA_OFFS_H_ADDR,
-    //     MPU6050::ZA_OFFS_L_TC_ADDR); int16_t acc_offset[3] = {-4600,
-    //     -909, 1088}; mpu6050.setAccOffset(acc_offset);
-    //     mpu6050.dumpMemory(MPU6050::XA_OFFS_H_ADDR,
-    //     MPU6050::ZA_OFFS_L_TC_ADDR);
+    for (uint32_t run = 0; run < NUM_RUNS; run++) {
+        for (uint32_t sample = 0; sample < NUM_SAMPLES; sample++) {
+            std::cout << timestamp[run][sample] << "," << acc[run][sample].x()
+                      << "," << acc[run][sample].y() << ","
+                      << acc[run][sample].z() << "," << gyro[run][sample].x()
+                      << "," << gyro[run][sample].y() << ","
+                      << gyro[run][sample].z() << "\n";
+        }
+    }
 
     return 0;
 }
