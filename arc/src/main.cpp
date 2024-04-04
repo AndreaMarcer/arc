@@ -28,8 +28,8 @@
 |                                    MACRO                                    |
 \*****************************************************************************/
 
-#define I2C_SDA_PIN 20
-#define I2C_SCL_PIN 21
+#define I2C_SDA_PIN 12
+#define I2C_SCL_PIN 13
 
 /*****************************************************************************\
 |                                     MAIN                                    |
@@ -50,32 +50,28 @@ int main() {
 
     log_info << "================================================\n";
 
-    MPU6050 mpu6050_1{i2c_default, MPU6050::I2C_ADDR_AD0_LOW};
-    // MPU6050 mpu6050_2{i2c_default, MPU6050::I2C_ADDR_AD0_HIGH};
+    MPU6050 mpu6050{i2c_default, MPU6050::I2C_ADDR_AD0_LOW};
 
-    mpu6050_1.wake();
-    mpu6050_1.selfTest();
-    if (mpu6050_1.ok()) {
-        // mpu6050_1.calibrateGyro();
-    } else {
-        return 0;
-    }
+    mpu6050.wake();
+    mpu6050.selfTest();
+    // if (mpu6050.ok()) {
+    //     mpu6050.calibrateGyro();
+    // } else {
+    //     return 0;
+    // }
 
-    mpu6050_1.setDLPFConfig(MPU6050::DlpfBW::_260Hz);
-    mpu6050_1.setAccRange(MPU6050::AccRange::_4G);
-    mpu6050_1.setGyroRange(MPU6050::GyroRange::_500);
-    mpu6050_1.setClockSource(MPU6050::ClockSource::PLL_GYROX);
+    mpu6050.setDLPFConfig(MPU6050::DlpfBW::_260Hz);
+    mpu6050.setAccRange(MPU6050::AccRange::_8G);
+    mpu6050.setGyroRange(MPU6050::GyroRange::_500);
+    mpu6050.setClockSource(MPU6050::ClockSource::PLL_GYROX);
 
-    int16_t acc_offset[3] = {-4709, -903, 866};
-    mpu6050_1.setAccOffset(acc_offset);
+    int16_t acc_offset[3] = {-4603, -928, 1047};
+    mpu6050.setAccOffset(acc_offset);
+    int8_t acc_scale[3] = {5, -4, -3};
+    mpu6050.setAccScale(acc_scale);
+
     int16_t gyro_offset[3] = {334, 21, -7};
-    mpu6050_1.setGyroOffset(gyro_offset);
-
-    // mpu6050_2.wake();
-    // mpu6050_2.setDLPFConfig(MPU6050::DlpfBW::_260Hz);
-    // mpu6050_2.setAccRange(MPU6050::AccRange::_4G);
-    // mpu6050_2.setGyroRange(MPU6050::GyroRange::_500);
-    // mpu6050_2.setClockSource(MPU6050::ClockSource::PLL_GYROX);
+    mpu6050.setGyroOffset(gyro_offset);
 
     sleep_ms(100);
 
@@ -85,34 +81,25 @@ int main() {
 
     sleep_ms(1000);
 
-    int n = 1000;
-    Vector<float, 3> acc_1[n];
-    Vector<float, 3> gyro_1[n];
-    uint64_t timestamp_1[n];
-    Vector<float, 3> acc_2[n];
-    Vector<float, 3> gyro_2[n];
-    uint64_t timestamp_2[n];
+    size_t n = 1000;
+    Vector<float, 3> acc[n];
+    Vector<float, 3> gyro[n];
+    uint64_t timestamp[n];
 
     for (size_t i = 0; i < n; i++) {
-        mpu6050_1.getAccGyro(acc_1[i], gyro_1[i]);
-        timestamp_1[i] = time_us_64();
-        // mpu6050_2.getAccGyro(acc_2[i], gyro_2[i]);
-        // timestamp_2[i] = time_us_64();
+        mpu6050.getAccGyro(acc[i], gyro[i]);
+        timestamp[i] = time_us_64();
         sleep_ms(10);
     }
+
     for (size_t i = 0; i < n; i++) {
-        std::cout << timestamp_1[i] << "," << acc_1[i].x() << ","
-                  << acc_1[i].y() << "," << acc_1[i].z() << "," << gyro_1[i].x()
-                  << "," << gyro_1[i].y() << "," << gyro_1[i].z() << "\n";
+        std::cout << timestamp[i] << "," << acc[i].x() << "," << acc[i].y()
+                  << "," << acc[i].z() << "," << gyro[i].x() << ","
+                  << gyro[i].y() << "," << gyro[i].z() << "\n";
     }
-    // std::cout << "SECOND\n";
-    // for (size_t i = 0; i < n; i++) {
-    //     std::cout << timestamp_2[i] << "," << acc_2[i].x() << ","
-    //               << acc_2[i].y() << "," << acc_2[i].z() << "," <<
-    //               gyro_2[i].x()
-    //               << "," << gyro_2[i].y() << "," << gyro_2[i].z() << "\n";
-    // }
+
     return 0;
+
     // clang-format off
     Matrix<float, 6, 6> A;
     A << 1.0, 1.0, 0.5, 0.0, 0.0, 0.0,

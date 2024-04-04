@@ -28,15 +28,21 @@
 /*****************************************************************************\
 |                                    MACRO                                    |
 \*****************************************************************************/
-static constexpr uint32_t NUM_SAMPLES = 100;
+static constexpr uint32_t NUM_SAMPLES = 150;
 static constexpr uint32_t NUM_RUNS = 25;
-static constexpr uint32_t MS_BETWEEN_SAMPLES = 25;
+static constexpr uint32_t MS_BETWEEN_SAMPLES = 20;
 static constexpr uint32_t MS_PER_ACQUISITION = NUM_SAMPLES * MS_BETWEEN_SAMPLES;
-static constexpr double ACC_STD_TRH = 2.2;
-static constexpr double GYRO_STD_TRH = 0.43;
+static constexpr double ACC_STD_TRH = 1.4;
+static constexpr double GYRO_STD_TRH = 0.40;
 
-#define I2C_SDA_PIN 20
-#define I2C_SCL_PIN 21
+static constexpr int16_t ACC_OFFSET[3] = {0, 0, 0};
+static constexpr int8_t ACC_SCALE[3] = {-8, -8, -8};
+
+static constexpr int16_t GYRO_OFFSET[3] = {0, 0, 0};
+// static constexpr int8_t GYRO_SCALE[3] = {-8, -8, -8};
+
+static constexpr uint I2C_SDA_PIN = 12;
+static constexpr uint I2C_SCL_PIN = 13;
 
 /*****************************************************************************\
 |                                     MAIN                                    |
@@ -59,12 +65,6 @@ int main() {
     MPU6050 mpu6050{i2c_default, MPU6050::I2C_ADDR_AD0_LOW};
 
     mpu6050.wake();
-    // mpu6050.selfTest();
-    // if (mpu6050.ok()) {
-    //     mpu6050.calibrateGyro();
-    // } else {
-    //     return 0;
-    // }
 
     mpu6050.setDLPFConfig(MPU6050::DlpfBW::_260Hz);
     mpu6050.setAccRange(MPU6050::AccRange::_8G);
@@ -72,7 +72,7 @@ int main() {
     mpu6050.setClockSource(MPU6050::ClockSource::PLL_GYROX);
 
     //
-    // INIT
+    // INIT OFFSET
     //
     int16_t orig_acc_offsets[3];
     mpu6050.getAccOffset(orig_acc_offsets);
@@ -85,11 +85,8 @@ int main() {
              << orig_gyro_offsets[1] << ", " << orig_gyro_offsets[2]
              << std::endl;
 
-    int16_t acc_offset[3] = {-4709, -903, 866};
-    mpu6050.setAccOffset(acc_offset);
-
-    int16_t gyro_offset[3] = {334, 21, -7};
-    mpu6050.setGyroOffset(gyro_offset);
+    mpu6050.setAccOffset(ACC_OFFSET);
+    mpu6050.setGyroOffset(GYRO_OFFSET);
 
     int16_t curr_acc_offsets[3];
     mpu6050.getAccOffset(curr_acc_offsets);
@@ -100,6 +97,36 @@ int main() {
     mpu6050.getGyroOffset(curr_gyro_offsets);
     log_info << "gyro_offset: " << curr_gyro_offsets[0] << ", "
              << curr_gyro_offsets[1] << ", " << curr_gyro_offsets[2]
+             << std::endl;
+
+    //
+    // INIT SCALE
+    //
+    int8_t orig_acc_scale[3];
+    mpu6050.getAccScale(orig_acc_scale);
+    log_info << "orig_acc_scale: " << signed(orig_acc_scale[0]) << ", "
+             << signed(orig_acc_scale[1]) << ", " << signed(orig_acc_scale[2])
+             << std::endl;
+
+    int8_t orig_gyro_scale[3];
+    mpu6050.getGyroScale(orig_gyro_scale);
+    log_info << "orig_gyro_scale: " << (int)orig_gyro_scale[0] << ", "
+             << (int)orig_gyro_scale[1] << ", " << (int)orig_gyro_scale[2]
+             << std::endl;
+
+    mpu6050.setAccScale(ACC_SCALE);
+    // mpu6050.setGyroScale(GYRO_SCALE);
+
+    int8_t curr_acc_scale[3];
+    mpu6050.getAccScale(curr_acc_scale);
+    log_info << "curr_acc_scale: " << (int)curr_acc_scale[0] << ", "
+             << (int)curr_acc_scale[1] << ", " << (int)curr_acc_scale[2]
+             << std::endl;
+
+    int8_t curr_gyro_scale[3];
+    mpu6050.getGyroScale(curr_gyro_scale);
+    log_info << "curr_gyro_scale: " << (int)curr_gyro_scale[0] << ", "
+             << (int)curr_gyro_scale[1] << ", " << (int)curr_gyro_scale[2]
              << std::endl;
 
     //
@@ -182,12 +209,16 @@ int main() {
     // PRINT
     //
 
-    mpu6050.getAccOffset(curr_acc_offsets);
-    mpu6050.getGyroOffset(curr_gyro_offsets);
     std::cout << 0 << "," << curr_acc_offsets[0] << "," << curr_acc_offsets[1]
               << "," << curr_acc_offsets[2] << "," << curr_gyro_offsets[0]
               << "," << curr_gyro_offsets[1] << "," << curr_gyro_offsets[2]
               << "\n";
+
+    std::cout << 0 << "," << (int32_t)curr_acc_scale[0] << ","
+              << (int32_t)curr_acc_scale[1] << "," << (int32_t)curr_acc_scale[2]
+              << "," << (int32_t)curr_gyro_scale[0] << ","
+              << (int32_t)curr_gyro_scale[1] << ","
+              << (int32_t)curr_gyro_scale[2] << "\n";
 
     for (uint32_t run = 0; run < NUM_RUNS; run++) {
         for (uint32_t sample = 0; sample < NUM_SAMPLES; sample++) {
