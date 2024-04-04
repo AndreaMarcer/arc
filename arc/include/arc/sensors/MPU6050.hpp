@@ -60,9 +60,23 @@ public:
     static constexpr uint8_t ZG_OFFS_BITS       = 0b01111110;
     static constexpr uint8_t ZG_OTP_BNK_VLD_BIT = BIT(0);
 
-    static constexpr uint8_t X_FINE_GAIN_ADDR   = 0x03;
-    static constexpr uint8_t Y_FINE_GAIN_ADDR   = 0x04;
-    static constexpr uint8_t Z_FINE_GAIN_ADDR   = 0x05;
+    static constexpr uint8_t X_FINE_GAIN_ADDR    = 0x03;
+    static constexpr uint8_t XG_FINE_GAIN_BITS   = 0b00001111;
+    static constexpr uint8_t XG_FINE_GAIN_OFFSET = 0;
+    static constexpr uint8_t XA_FINE_GAIN_BITS   = 0b11110000;
+    static constexpr uint8_t XA_FINE_GAIN_OFFSET = 4;
+
+    static constexpr uint8_t Y_FINE_GAIN_ADDR    = 0x04;
+    static constexpr uint8_t YG_FINE_GAIN_BITS   = 0b00001111;
+    static constexpr uint8_t YG_FINE_GAIN_OFFSET = 0;
+    static constexpr uint8_t YA_FINE_GAIN_BITS   = 0b11110000;
+    static constexpr uint8_t YA_FINE_GAIN_OFFSET = 4;
+
+    static constexpr uint8_t Z_FINE_GAIN_ADDR    = 0x05;
+    static constexpr uint8_t ZG_FINE_GAIN_BITS   = 0b00001111;
+    static constexpr uint8_t ZG_FINE_GAIN_OFFSET = 0;
+    static constexpr uint8_t ZA_FINE_GAIN_BITS   = 0b11110000;
+    static constexpr uint8_t ZA_FINE_GAIN_OFFSET = 4;
 
     static constexpr uint8_t XA_OFFS_H_ADDR = 0x06;
     static constexpr uint8_t XA_OFFS_L_ADDR = 0x07;
@@ -384,6 +398,8 @@ public:
     int disableAccSelfTest();
     int setAccOffset(const int16_t[3]);
     int getAccOffset(int16_t[3]);
+    int setAccScale(const int8_t[3]);
+    int getAccScale(int8_t[3]);
 
     inline int getRawGyro(Eigen::Vector<int16_t, 3> &);
     inline int getGyro(Eigen::Vector<float, 3> &);
@@ -396,6 +412,8 @@ public:
     int calibrateGyro();
     int setGyroOffset(const int16_t[3]);
     int getGyroOffset(int16_t[3]);
+    int setGyroScale(const int8_t[3]);
+    int getGyroScale(int8_t[3]);
 
     inline int getAccGyro(Eigen::Vector<float, 3> &, Eigen::Vector<float, 3> &);
     inline int getRawAccGyro(Eigen::Vector<int16_t, 3> &,
@@ -416,6 +434,7 @@ public:
 
     int dumpMemory(uint8_t, uint8_t);
     int dumpMemory(uint8_t);
+    int dumpMemory();
     int reset();
     int reset_paths();
     int sleep();

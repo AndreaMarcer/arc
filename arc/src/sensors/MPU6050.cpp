@@ -743,6 +743,69 @@ int MPU6050::getAccOffset(int16_t offsets[3]) {
     return 0;
 }
 
+int MPU6050::setAccScale(const int8_t scales[3]) {
+    int ret;
+
+    ret = m_i2c.writeBits(X_FINE_GAIN_ADDR, static_cast<uint8_t>(scales[0]),
+                          XA_FINE_GAIN_BITS, XA_FINE_GAIN_OFFSET);
+    if (ret != 1) {
+        log_error << "Error in writeBytes()\n";
+        return EIO;
+    }
+
+    ret = m_i2c.writeBits(Y_FINE_GAIN_ADDR, static_cast<uint8_t>(scales[1]),
+                          YA_FINE_GAIN_BITS, YA_FINE_GAIN_OFFSET);
+    if (ret != 1) {
+        log_error << "Error in writeBytes()\n";
+        return EIO;
+    }
+
+    ret = m_i2c.writeBits(Z_FINE_GAIN_ADDR, static_cast<uint8_t>(scales[2]),
+                          ZA_FINE_GAIN_BITS, ZA_FINE_GAIN_OFFSET);
+    if (ret != 1) {
+        log_error << "Error in writeBytes()\n";
+        return EIO;
+    }
+
+    return 0;
+}
+
+int MPU6050::getAccScale(int8_t scales[3]) {
+    int ret;
+    uint8_t raw_scales[3];
+
+    ret = m_i2c.readBits(X_FINE_GAIN_ADDR, XA_FINE_GAIN_BITS,
+                         XA_FINE_GAIN_OFFSET, raw_scales[0]);
+    if (ret != 1) {
+        log_error << "Error in readBits()\n";
+        return EIO;
+    }
+    if (raw_scales[0] & 0b1000)  // sign extension
+        raw_scales[0] |= 0b11110000;
+
+    ret = m_i2c.readBits(Y_FINE_GAIN_ADDR, YA_FINE_GAIN_BITS,
+                         YA_FINE_GAIN_OFFSET, raw_scales[1]);
+    if (ret != 1) {
+        log_error << "Error in readBits()\n";
+        return EIO;
+    }
+    if (raw_scales[1] & 0b1000)  // sign extension
+        raw_scales[1] |= 0b11110000;
+
+    ret = m_i2c.readBits(Z_FINE_GAIN_ADDR, ZA_FINE_GAIN_BITS,
+                         ZA_FINE_GAIN_OFFSET, raw_scales[2]);
+    if (ret != 1) {
+        log_error << "Error in readBits()\n";
+        return EIO;
+    }
+    if (raw_scales[2] & 0b1000)  // sign extension
+        raw_scales[2] |= 0b11110000;
+
+    memcpy(scales, raw_scales, sizeof(raw_scales));
+
+    return 0;
+}
+
 int MPU6050::setGyroOffset(const int16_t offsets[3]) {
     int ret = m_i2c.writeWords(XG_OFFS_H_ADDR, (uint16_t *)offsets, 3);
     if (ret != 3) {
@@ -760,6 +823,71 @@ int MPU6050::getGyroOffset(int16_t offsets[3]) {
     }
     return 0;
 }
+
+int MPU6050::setGyroScale(const int8_t scales[3]) {
+    int ret;
+
+    ret = m_i2c.writeBits(X_FINE_GAIN_ADDR, static_cast<uint8_t>(scales[0]),
+                          XG_FINE_GAIN_BITS, XG_FINE_GAIN_OFFSET);
+    if (ret != 1) {
+        log_error << "Error in writeBytes()\n";
+        return EIO;
+    }
+
+    ret = m_i2c.writeBits(Y_FINE_GAIN_ADDR, static_cast<uint8_t>(scales[1]),
+                          YG_FINE_GAIN_BITS, YG_FINE_GAIN_OFFSET);
+    if (ret != 1) {
+        log_error << "Error in writeBytes()\n";
+        return EIO;
+    }
+
+    ret = m_i2c.writeBits(Z_FINE_GAIN_ADDR, static_cast<uint8_t>(scales[2]),
+                          ZG_FINE_GAIN_BITS, ZG_FINE_GAIN_OFFSET);
+    if (ret != 1) {
+        log_error << "Error in writeBytes()\n";
+        return EIO;
+    }
+
+    return 0;
+}
+
+int MPU6050::getGyroScale(int8_t scales[3]) {
+    int ret;
+    uint8_t raw_scales[3];
+
+    ret = m_i2c.readBits(X_FINE_GAIN_ADDR, XG_FINE_GAIN_BITS,
+                         XG_FINE_GAIN_OFFSET, raw_scales[0]);
+    if (ret != 1) {
+        log_error << "Error in readBits()\n";
+        return EIO;
+    }
+    if (raw_scales[0] & 0b1000)  // sign extension
+        raw_scales[0] |= 0b11110000;
+
+    ret = m_i2c.readBits(Y_FINE_GAIN_ADDR, YG_FINE_GAIN_BITS,
+                         YG_FINE_GAIN_OFFSET, raw_scales[1]);
+    if (ret != 1) {
+        log_error << "Error in readBits()\n";
+        return EIO;
+    }
+    if (raw_scales[1] & 0b1000)  // sign extension
+        raw_scales[1] |= 0b11110000;
+
+    ret = m_i2c.readBits(Z_FINE_GAIN_ADDR, ZG_FINE_GAIN_BITS,
+                         ZG_FINE_GAIN_OFFSET, raw_scales[2]);
+    if (ret != 1) {
+        log_error << "Error in readBits()\n";
+        return EIO;
+    }
+    if (raw_scales[2] & 0b1000)  // sign extension
+        raw_scales[2] |= 0b11110000;
+
+    memcpy(scales, raw_scales, sizeof(raw_scales));
+
+    return 0;
+}
+
+int MPU6050::dumpMemory() { return dumpMemory(XG_OFFS_TC_ADDR, WHO_AM_I_ADDR); }
 
 int MPU6050::dumpMemory(uint8_t start) { return dumpMemory(start, start); }
 
