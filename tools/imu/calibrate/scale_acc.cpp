@@ -21,7 +21,6 @@
 #include "common/log.hpp"
 #include "common/common.hpp"
 #include "common/stopwatch.hpp"
-#include "control/kalman.hpp"
 #include "sensors/MPU6050.hpp"
 
 /*****************************************************************************\
@@ -46,7 +45,6 @@
 int main() {
     using namespace arc::sensors;
     using namespace arc::common;
-    using namespace arc::control;
     using namespace Eigen;
 
     stdio_init_all();
